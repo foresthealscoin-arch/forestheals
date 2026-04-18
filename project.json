@@ -1,0 +1,34 @@
+{
+  "overview": "Forestheals is a luxury eco-friendly Ayurvedic eCommerce platform offering 20 premium natural products — powders, seeds, spices, and skincare. The brand tagline 'From forest to homes' reflects its mission to bring nature's healing power to everyday households. Built with a full shopping experience including user accounts, cart, Stripe checkout, admin panel, and a unique disease-to-product health recommendation system.",
+  "features": [
+    "20 real Ayurvedic products with eco-friendly kraft paper packaging",
+    "Disease-to-product recommendation system for hair fall, stress, immunity and more",
+    "Full shopping cart with persistent storage across sessions",
+    "Stripe checkout + Cash on Delivery payment options",
+    "User dashboard with orders, wishlist, and invoice download",
+    "Admin panel for product, order, and review management",
+    "Product bundles — skincare and haircare bundles with automatic discounts",
+    "B2B bulk inquiry form with export/bio-coal section",
+    "WhatsApp floating button for instant customer support",
+    "Flash sale timer and coupon code system",
+    "Reviews and verified ratings on all products",
+    "Legal pages — Terms, Privacy, Refund Policy",
+    "Services coming soon page with email capture",
+    "Community email signup embedded across all pages",
+    "SEO-optimized pages with meta tags and Open Graph support"
+  ],
+  "category": "ecommerce",
+  "tags": [
+    "ayurvedic",
+    "ecommerce",
+    "natural-products",
+    "eco-friendly",
+    "wellness",
+    "health",
+    "indian-brand",
+    "b2b",
+    "stripe-payments",
+    "product-catalog"
+  ],
+  "last_updated": "2026-04-16T13:12:41.130Z"
+}
