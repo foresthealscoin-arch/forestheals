@@ -36,7 +36,7 @@ export default function AdminPDashboard() {
 
     const fetchData = async () => {
       try {
-        const stats = await actor.getAnalyticsSummary();
+        const stats = await actor.getAnalytics();
         setAnalytics({
           totalRevenue: Number(stats.totalRevenue),
           totalOrders: Number(stats.totalOrders),

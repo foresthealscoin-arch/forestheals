@@ -206,6 +206,30 @@ export const AdminStats = IDL.Record({
   'totalOrders' : IDL.Nat,
   'totalRevenue' : IDL.Nat,
 });
+export const ActivityType = IDL.Variant({
+  'Login' : IDL.Null,
+  'WishlistRemove' : IDL.Null,
+  'CouponUsed' : IDL.Null,
+  'OrderPlaced' : IDL.Null,
+  'ProductView' : IDL.Null,
+  'Logout' : IDL.Null,
+  'NewsletterSignup' : IDL.Null,
+  'ProfileUpdated' : IDL.Null,
+  'CartAdd' : IDL.Null,
+  'SearchQuery' : IDL.Null,
+  'ReviewSubmitted' : IDL.Null,
+  'WishlistAdd' : IDL.Null,
+  'B2BInquiry' : IDL.Null,
+  'CartRemove' : IDL.Null,
+  'AddressAdded' : IDL.Null,
+});
+export const UserActivity = IDL.Record({
+  'id' : IDL.Nat,
+  'activityType' : ActivityType,
+  'metadata' : IDL.Text,
+  'userId' : IDL.Principal,
+  'timestamp' : IDL.Int,
+});
 export const Address = IDL.Record({
   'tag' : IDL.Text,
   'street' : IDL.Text,
@@ -222,6 +246,18 @@ export const UserProfile = IDL.Record({
   'email' : IDL.Text,
   'addresses' : IDL.Vec(Address),
   'phone' : IDL.Text,
+});
+export const EnrichedCustomerProfile = IDL.Record({
+  'id' : IDL.Principal,
+  'status' : IDL.Text,
+  'totalOrders' : IDL.Nat,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'email' : IDL.Text,
+  'totalSpend' : IDL.Nat,
+  'phone' : IDL.Text,
+  'lastLogin' : IDL.Opt(IDL.Int),
+  'activityCount' : IDL.Nat,
 });
 export const B2BInquiry = IDL.Record({
   'id' : IDL.Nat,
@@ -370,8 +406,14 @@ export const idlService = IDL.Service({
     ),
   'getAdminStats' : IDL.Func([], [AdminStats], ['query']),
   'getAdminTasks' : IDL.Func([], [IDL.Vec(AdminTask)], ['query']),
+  'getAllActivities' : IDL.Func([], [IDL.Vec(UserActivity)], ['query']),
   'getAllBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
   'getAllCustomers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+  'getAllCustomersEnriched' : IDL.Func(
+      [],
+      [IDL.Vec(EnrichedCustomerProfile)],
+      ['query'],
+    ),
   'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
   'getAllReviews' : IDL.Func([], [IDL.Vec(Review)], ['query']),
   'getAnalytics' : IDL.Func(
@@ -379,6 +421,11 @@ export const idlService = IDL.Service({
       [
         IDL.Record({
           'totalOrders' : IDL.Nat,
+          'totalActivities' : IDL.Nat,
+          'newUsersToday' : IDL.Nat,
+          'recentActivities' : IDL.Vec(UserActivity),
+          'activeUsersToday' : IDL.Nat,
+          'totalRegisteredUsers' : IDL.Nat,
           'totalExpenses' : IDL.Nat,
           'totalRevenue' : IDL.Nat,
           'totalCustomers' : IDL.Nat,
@@ -393,6 +440,11 @@ export const idlService = IDL.Service({
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCart' : IDL.Func([], [IDL.Vec(CartItem)], ['query']),
   'getCoupons' : IDL.Func([], [IDL.Vec(Coupon)], ['query']),
+  'getCustomerProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(EnrichedCustomerProfile)],
+      ['query'],
+    ),
   'getExpenses' : IDL.Func([], [IDL.Vec(AdminExpense)], ['query']),
   'getExpensesByCategory' : IDL.Func(
       [],
@@ -411,6 +463,11 @@ export const idlService = IDL.Service({
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
   'getTasks' : IDL.Func([], [IDL.Vec(AdminTask)], ['query']),
   'getTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
+  'getUserActivities' : IDL.Func(
+      [IDL.Opt(IDL.Principal)],
+      [IDL.Vec(UserActivity)],
+      ['query'],
+    ),
   'getUserOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
   'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getWishlist' : IDL.Func([], [IDL.Vec(IDL.Nat)], ['query']),
@@ -425,6 +482,7 @@ export const idlService = IDL.Service({
   'listFeaturedProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),
   'listProducts' : IDL.Func([ProductFilter], [IDL.Vec(Product)], ['query']),
   'listUserOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'logUserActivity' : IDL.Func([ActivityType, IDL.Text], [UserActivity], []),
   'markNotificationRead' : IDL.Func([IDL.Text], [IDL.Bool], []),
   'placeOrder' : IDL.Func([CreateOrderInput], [Order], []),
   'publishBlogPost' : IDL.Func([IDL.Text], [IDL.Bool], []),
@@ -685,6 +743,30 @@ export const idlFactory = ({ IDL }) => {
     'totalOrders' : IDL.Nat,
     'totalRevenue' : IDL.Nat,
   });
+  const ActivityType = IDL.Variant({
+    'Login' : IDL.Null,
+    'WishlistRemove' : IDL.Null,
+    'CouponUsed' : IDL.Null,
+    'OrderPlaced' : IDL.Null,
+    'ProductView' : IDL.Null,
+    'Logout' : IDL.Null,
+    'NewsletterSignup' : IDL.Null,
+    'ProfileUpdated' : IDL.Null,
+    'CartAdd' : IDL.Null,
+    'SearchQuery' : IDL.Null,
+    'ReviewSubmitted' : IDL.Null,
+    'WishlistAdd' : IDL.Null,
+    'B2BInquiry' : IDL.Null,
+    'CartRemove' : IDL.Null,
+    'AddressAdded' : IDL.Null,
+  });
+  const UserActivity = IDL.Record({
+    'id' : IDL.Nat,
+    'activityType' : ActivityType,
+    'metadata' : IDL.Text,
+    'userId' : IDL.Principal,
+    'timestamp' : IDL.Int,
+  });
   const Address = IDL.Record({
     'tag' : IDL.Text,
     'street' : IDL.Text,
@@ -701,6 +783,18 @@ export const idlFactory = ({ IDL }) => {
     'email' : IDL.Text,
     'addresses' : IDL.Vec(Address),
     'phone' : IDL.Text,
+  });
+  const EnrichedCustomerProfile = IDL.Record({
+    'id' : IDL.Principal,
+    'status' : IDL.Text,
+    'totalOrders' : IDL.Nat,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'email' : IDL.Text,
+    'totalSpend' : IDL.Nat,
+    'phone' : IDL.Text,
+    'lastLogin' : IDL.Opt(IDL.Int),
+    'activityCount' : IDL.Nat,
   });
   const B2BInquiry = IDL.Record({
     'id' : IDL.Nat,
@@ -846,8 +940,14 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getAdminStats' : IDL.Func([], [AdminStats], ['query']),
     'getAdminTasks' : IDL.Func([], [IDL.Vec(AdminTask)], ['query']),
+    'getAllActivities' : IDL.Func([], [IDL.Vec(UserActivity)], ['query']),
     'getAllBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
     'getAllCustomers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+    'getAllCustomersEnriched' : IDL.Func(
+        [],
+        [IDL.Vec(EnrichedCustomerProfile)],
+        ['query'],
+      ),
     'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
     'getAllReviews' : IDL.Func([], [IDL.Vec(Review)], ['query']),
     'getAnalytics' : IDL.Func(
@@ -855,6 +955,11 @@ export const idlFactory = ({ IDL }) => {
         [
           IDL.Record({
             'totalOrders' : IDL.Nat,
+            'totalActivities' : IDL.Nat,
+            'newUsersToday' : IDL.Nat,
+            'recentActivities' : IDL.Vec(UserActivity),
+            'activeUsersToday' : IDL.Nat,
+            'totalRegisteredUsers' : IDL.Nat,
             'totalExpenses' : IDL.Nat,
             'totalRevenue' : IDL.Nat,
             'totalCustomers' : IDL.Nat,
@@ -869,6 +974,11 @@ export const idlFactory = ({ IDL }) => {
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCart' : IDL.Func([], [IDL.Vec(CartItem)], ['query']),
     'getCoupons' : IDL.Func([], [IDL.Vec(Coupon)], ['query']),
+    'getCustomerProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(EnrichedCustomerProfile)],
+        ['query'],
+      ),
     'getExpenses' : IDL.Func([], [IDL.Vec(AdminExpense)], ['query']),
     'getExpensesByCategory' : IDL.Func(
         [],
@@ -887,6 +997,11 @@ export const idlFactory = ({ IDL }) => {
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
     'getTasks' : IDL.Func([], [IDL.Vec(AdminTask)], ['query']),
     'getTeamMembers' : IDL.Func([], [IDL.Vec(TeamMember)], ['query']),
+    'getUserActivities' : IDL.Func(
+        [IDL.Opt(IDL.Principal)],
+        [IDL.Vec(UserActivity)],
+        ['query'],
+      ),
     'getUserOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
     'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getWishlist' : IDL.Func([], [IDL.Vec(IDL.Nat)], ['query']),
@@ -901,6 +1016,7 @@ export const idlFactory = ({ IDL }) => {
     'listFeaturedProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),
     'listProducts' : IDL.Func([ProductFilter], [IDL.Vec(Product)], ['query']),
     'listUserOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'logUserActivity' : IDL.Func([ActivityType, IDL.Text], [UserActivity], []),
     'markNotificationRead' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'placeOrder' : IDL.Func([CreateOrderInput], [Order], []),
     'publishBlogPost' : IDL.Func([IDL.Text], [IDL.Bool], []),

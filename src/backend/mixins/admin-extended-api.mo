@@ -2,8 +2,11 @@ import Array "mo:core/Array";
 import List "mo:core/List";
 import Map "mo:core/Map";
 import Time "mo:core/Time";
+import Principal "mo:core/Principal";
 import AdminTypes "../types/admin";
 import OrderTypes "../types/orders";
+import UserTypes "../types/users";
+import UserLib "../lib/users";
 
 mixin (
   teamMemberStore : List.List<AdminTypes.TeamMember>,
@@ -15,6 +18,8 @@ mixin (
   adminCouponStore : List.List<AdminTypes.AdminCoupon>,
   inventoryStore : Map.Map<Text, AdminTypes.InventoryItem>,
   orderStore : List.List<OrderTypes.Order>,
+  userStore : Map.Map<Principal, UserTypes.UserProfile>,
+  activityStore : Map.Map<Nat, UserTypes.UserActivity>,
 ) {
 
   // ── Admin Authentication ──────────────────────────────────────────────────
@@ -299,6 +304,11 @@ mixin (
     netProfit : Int;
     avgOrderValue : Nat;
     totalCustomers : Nat;
+    totalRegisteredUsers : Nat;
+    newUsersToday : Nat;
+    activeUsersToday : Nat;
+    totalActivities : Nat;
+    recentActivities : [UserTypes.UserActivity];
   } {
     let orders = orderStore.toArray();
     let totalOrders = orders.size();
@@ -311,6 +321,19 @@ mixin (
     let totalExpenses = expenseStore.foldLeft(0, func(acc, e) { acc + e.amount });
     let netProfit : Int = totalRevenue.toInt() - totalExpenses.toInt();
     let avgOrderValue : Nat = if (totalOrders == 0) { 0 } else { totalRevenue / totalOrders };
+
+    // User / activity stats
+    let totalRegisteredUsers = userStore.size();
+    let newUsersToday = UserLib.countNewUsersToday(userStore);
+    let activeUsersToday = UserLib.countActiveUsersToday(activityStore);
+    let totalActivities = activityStore.size();
+    let allActivities = UserLib.getAllActivities(activityStore);
+    let recentActivities = if (allActivities.size() <= 10) {
+      allActivities;
+    } else {
+      allActivities.sliceToArray(0, 10);
+    };
+
     {
       totalRevenue;
       totalOrders;
@@ -318,6 +341,11 @@ mixin (
       netProfit;
       avgOrderValue;
       totalCustomers = customerSet.size();
+      totalRegisteredUsers;
+      newUsersToday;
+      activeUsersToday;
+      totalActivities;
+      recentActivities;
     };
   };
 

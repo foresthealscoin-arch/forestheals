@@ -38,10 +38,13 @@ function OfferBanner() {
       data-ocid="offer.banner"
     >
       <Sparkles className="w-4 h-4 text-secondary shrink-0" />
-      <span>
+      <span className="text-xs sm:text-sm">
         🎉 <strong>10% off</strong> your first order — Use code{" "}
-        <span className="font-bold text-secondary">FOREST10</span> &nbsp;|&nbsp;
-        Free shipping on orders above ₹499
+        <span className="font-bold text-secondary">FOREST10</span>
+        <span className="hidden sm:inline">
+          {" "}
+          &nbsp;|&nbsp; Free shipping on orders above ₹499
+        </span>
       </span>
       <button
         type="button"
@@ -128,7 +131,7 @@ function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Badge className="bg-secondary/15 text-secondary border border-secondary/40 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
+          <Badge className="bg-secondary/15 text-secondary border border-secondary/40 px-3 py-1.5 text-xs sm:text-sm font-medium backdrop-blur-sm text-center">
             Natural forest-based healing products for skin &amp; body — 100%
             chemical-free
           </Badge>
@@ -139,12 +142,12 @@ function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-          className="text-5xl md:text-7xl lg:text-8xl font-bold text-secondary tracking-tight leading-none"
+          className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-secondary tracking-tight leading-none"
           style={{ fontFamily: "var(--font-display)" }}
         >
           Heal Naturally
           <br />
-          <span className="text-secondary/70 text-4xl md:text-5xl lg:text-6xl font-light italic">
+          <span className="text-secondary/70 text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-light italic">
             with ForestHeals
           </span>
         </motion.h1>
@@ -154,35 +157,43 @@ function HeroSection() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
-          className="text-secondary/70 text-lg md:text-xl max-w-2xl leading-relaxed"
+          className="text-secondary/70 text-base sm:text-lg md:text-xl max-w-2xl leading-relaxed px-2"
         >
           Pure, chemical-free products made from forest-sourced ingredients for
           real results
         </motion.p>
 
-        {/* CTAs */}
+        {/* CTAs — stack vertically on mobile, side by side on sm+ */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.65 }}
-          className="flex flex-wrap gap-4 justify-center"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full max-w-sm sm:max-w-none"
         >
-          <Link to="/products" data-ocid="hero.shop_now_button">
+          <Link
+            to="/products"
+            data-ocid="hero.shop_now_button"
+            className="w-full sm:w-auto"
+          >
             <Button
               type="button"
               size="lg"
-              className="bg-secondary text-primary hover:bg-secondary/90 font-semibold px-8 shadow-green text-base h-13"
+              className="w-full sm:w-auto bg-secondary text-primary hover:bg-secondary/90 font-semibold px-8 shadow-green text-base h-12"
             >
               <ShoppingBag className="w-5 h-5 mr-2" />
               Shop Now
             </Button>
           </Link>
-          <Link to="/products" data-ocid="hero.explore_button">
+          <Link
+            to="/products"
+            data-ocid="hero.explore_button"
+            className="w-full sm:w-auto"
+          >
             <Button
               type="button"
               variant="outline"
               size="lg"
-              className="border-secondary/50 text-secondary hover:bg-secondary/10 font-semibold px-8 text-base bg-transparent backdrop-blur-sm"
+              className="w-full sm:w-auto border-secondary/50 text-secondary hover:bg-secondary/10 font-semibold px-8 text-base bg-transparent backdrop-blur-sm h-12"
             >
               <Leaf className="w-5 h-5 mr-2" />
               Explore Products
@@ -212,10 +223,10 @@ function HeroSection() {
                 repeat: Number.POSITIVE_INFINITY,
                 ease: "easeInOut",
               }}
-              className="absolute bottom-4 left-4 glass-card rounded-xl px-4 py-2 text-sm"
+              className="absolute bottom-4 left-4 glass-card rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm"
             >
               <span className="text-foreground font-semibold">⭐ 4.8/5</span>
-              <span className="text-muted-foreground ml-2 text-xs">
+              <span className="text-muted-foreground ml-1.5 sm:ml-2 text-xs hidden xs:inline">
                 2,400+ happy customers
               </span>
             </motion.div>
@@ -226,7 +237,7 @@ function HeroSection() {
                 repeat: Number.POSITIVE_INFINITY,
                 ease: "easeInOut",
               }}
-              className="absolute top-4 right-4 glass-card rounded-xl px-3 py-1.5 text-sm"
+              className="absolute top-4 right-4 glass-card rounded-xl px-2.5 py-1.5 sm:px-3 text-xs sm:text-sm"
             >
               <span className="text-primary font-semibold text-xs">
                 🌿 100% Chemical-Free
@@ -282,7 +293,7 @@ function TrustBadgesSection() {
       data-ocid="trust.section"
     >
       <div className="max-w-6xl mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {TRUST_BADGES.map((badge, i) => (
             <motion.div
               key={badge.label}
@@ -290,17 +301,19 @@ function TrustBadgesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-2 sm:gap-3"
               data-ocid={`trust.badge.${i + 1}`}
             >
-              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <badge.icon className="w-5 h-5 text-primary" />
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <badge.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-foreground text-sm truncate">
+                <p className="font-semibold text-foreground text-xs sm:text-sm truncate">
                   {badge.label}
                 </p>
-                <p className="text-xs text-muted-foreground">{badge.sub}</p>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  {badge.sub}
+                </p>
               </div>
             </motion.div>
           ))}
@@ -364,12 +377,12 @@ function BestSellersSection() {
 
   return (
     <section
-      className="py-20 bg-background"
+      className="py-16 sm:py-20 bg-background"
       id="bestsellers"
       data-ocid="best_sellers.section"
     >
       <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10 sm:mb-12">
           <p
             className="text-sm font-semibold tracking-widest uppercase mb-3"
             style={{ color: "#004a38" }}
@@ -377,7 +390,7 @@ function BestSellersSection() {
             Handpicked for You
           </p>
           <h2
-            className="text-4xl md:text-5xl font-bold mb-3"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3"
             style={{ color: "#004a38" }}
           >
             Best Sellers
@@ -386,12 +399,12 @@ function BestSellersSection() {
             className="w-12 h-0.5 mx-auto mb-4"
             style={{ background: "#004a38" }}
           />
-          <p className="text-muted-foreground max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
             Our most loved natural products — trusted by thousands of customers
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
           {displayProducts.map((product, i) => (
             <motion.div
               key={product.id}
@@ -403,7 +416,7 @@ function BestSellersSection() {
               data-ocid={`best_sellers.product.${i + 1}`}
             >
               <Link to="/products/$id" params={{ id: String(product.id) }}>
-                <div className="overflow-hidden" style={{ height: "192px" }}>
+                <div className="overflow-hidden" style={{ height: "160px" }}>
                   <img
                     src={product.imageUrl}
                     alt={product.name}
@@ -415,15 +428,15 @@ function BestSellersSection() {
                     }}
                   />
                 </div>
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <h3
-                    className="font-semibold text-sm leading-snug mb-1 line-clamp-2 group-hover:text-primary transition-colors"
+                    className="font-semibold text-xs sm:text-sm leading-snug mb-1 line-clamp-2 group-hover:text-primary transition-colors"
                     style={{ color: "#004a38" }}
                   >
                     {product.name}
                   </h3>
-                  <div className="flex items-center gap-1 mb-3">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <div className="flex items-center gap-1 mb-2 sm:mb-3">
+                    <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
                     <span className="text-xs font-medium text-foreground">
                       {product.ratings.toFixed(1)}
                     </span>
@@ -431,9 +444,9 @@ function BestSellersSection() {
                       ({product.reviewCount})
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-1 sm:gap-2">
                     <span
-                      className="font-bold text-base"
+                      className="font-bold text-sm sm:text-base"
                       style={{ color: "#004a38" }}
                     >
                       ₹
@@ -451,13 +464,13 @@ function BestSellersSection() {
           ))}
         </div>
 
-        <div className="text-center mt-12">
+        <div className="text-center mt-10 sm:mt-12">
           <Link to="/products">
             <Button
               type="button"
               size="lg"
               variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground px-10 font-semibold transition-smooth"
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 sm:px-10 font-semibold transition-smooth h-12"
               data-ocid="best_sellers.view_all_button"
             >
               View All Products
@@ -500,7 +513,7 @@ const WHY_PILLARS = [
 function WhyForestHealsSection() {
   return (
     <section
-      className="py-20 bg-muted/30"
+      className="py-16 sm:py-20 bg-muted/30"
       id="why"
       data-ocid="why_forestheals.section"
     >
@@ -509,18 +522,18 @@ function WhyForestHealsSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-14"
+          className="text-center mb-12 sm:mb-14"
         >
           <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
             Our Promise
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
             🌱 Why ForestHeals?
           </h2>
           <div className="w-16 h-1 bg-primary rounded-full mx-auto" />
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
           {WHY_PILLARS.map((pillar, i) => (
             <motion.div
               key={pillar.title}
@@ -528,7 +541,7 @@ function WhyForestHealsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.12 }}
-              className="glass-card rounded-3xl p-6 text-center hover:shadow-elevated transition-smooth hover:-translate-y-2 overflow-hidden relative"
+              className="glass-card rounded-3xl p-5 sm:p-6 text-center hover:shadow-elevated transition-smooth hover:-translate-y-2 overflow-hidden relative"
               data-ocid={`why.pillar.${i + 1}`}
             >
               <div className="text-4xl mb-4">{pillar.emoji}</div>
@@ -554,35 +567,35 @@ function WhyForestHealsSection() {
 function BrandStorySection() {
   return (
     <section
-      className="py-20"
+      className="py-16 sm:py-20"
       id="story"
       data-ocid="brand_story.section"
       style={{ background: "oklch(0.97 0.015 90)" }}
     >
       <div className="max-w-5xl mx-auto px-4">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="space-y-6"
+            className="space-y-5 sm:space-y-6"
           >
             <div>
               <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
                 Our Origins
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold text-foreground leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground leading-tight">
                 Our Story 🌿
               </h2>
             </div>
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
               ForestHeals was born from a simple belief — nature has all the
               answers. Deep in India's forests lie ancient secrets of healing,
               passed down through generations. We source the purest ingredients
               directly from forest communities, craft them with traditional
               Ayurvedic wisdom, and bring them straight to your home.
             </p>
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
               <strong className="text-foreground">
                 Why forest ingredients?
               </strong>{" "}
@@ -594,7 +607,7 @@ function BrandStorySection() {
                 type="button"
                 variant="outline"
                 size="lg"
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold h-12"
                 data-ocid="brand_story.learn_more_button"
               >
                 <Leaf className="w-4 h-4 mr-2" />
@@ -607,7 +620,7 @@ function BrandStorySection() {
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-2 gap-3 sm:gap-4"
           >
             {[
               { value: "2,400+", label: "Happy Customers" },
@@ -621,10 +634,10 @@ function BrandStorySection() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
-                className="glass-card rounded-2xl p-5 text-center shadow-soft"
+                className="glass-card rounded-2xl p-4 sm:p-5 text-center shadow-soft"
                 data-ocid={`brand_story.stat.${i + 1}`}
               >
-                <p className="text-3xl font-bold text-primary mb-1">
+                <p className="text-2xl sm:text-3xl font-bold text-primary mb-1">
                   {stat.value}
                 </p>
                 <p className="text-xs text-muted-foreground font-medium">
@@ -666,9 +679,9 @@ function TimerDigit({ value, label }: { value: number; label: string }) {
         key={display}
         animate={{ scale: [1.1, 1] }}
         transition={{ duration: 0.25 }}
-        className="bg-secondary/15 border border-secondary/25 rounded-xl px-3 py-2 min-w-[3.5rem] text-center"
+        className="bg-secondary/15 border border-secondary/25 rounded-xl px-2 py-1.5 sm:px-3 sm:py-2 min-w-[2.8rem] sm:min-w-[3.5rem] text-center"
       >
-        <span className="text-3xl md:text-4xl font-bold text-secondary tabular-nums">
+        <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-secondary tabular-nums">
           {display}
         </span>
       </motion.div>
@@ -684,7 +697,7 @@ function FlashSaleBanner() {
 
   return (
     <section
-      className="gradient-hero py-16 relative overflow-hidden"
+      className="gradient-hero py-14 sm:py-16 relative overflow-hidden"
       data-ocid="flash_sale.section"
     >
       <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-secondary/5 blur-3xl pointer-events-none" />
@@ -695,24 +708,28 @@ function FlashSaleBanner() {
           initial={{ opacity: 0, scale: 0.92 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="flex flex-col items-center gap-5"
+          className="flex flex-col items-center gap-4 sm:gap-5"
         >
           <Badge className="bg-secondary/15 text-secondary border border-secondary/30 text-sm px-4 py-1.5 animate-pulse">
             🔥 Limited Time Offer
           </Badge>
-          <h2 className="text-3xl md:text-5xl font-bold text-secondary text-balance">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-secondary text-balance">
             Flash Sale — Up to 30% Off!
           </h2>
-          <p className="text-secondary/65 text-base max-w-md">
+          <p className="text-secondary/65 text-sm sm:text-base max-w-md">
             Stock up on your wellness essentials at exclusive prices. Only
-            limited quantities available — offer ends soon!
+            limited quantities available!
           </p>
 
-          <div className="flex items-end gap-3 mt-2">
+          <div className="flex items-end gap-2 sm:gap-3 mt-2">
             <TimerDigit value={h} label="Hours" />
-            <span className="text-secondary/50 text-2xl font-bold mb-6">:</span>
+            <span className="text-secondary/50 text-xl sm:text-2xl font-bold mb-6">
+              :
+            </span>
             <TimerDigit value={m} label="Mins" />
-            <span className="text-secondary/50 text-2xl font-bold mb-6">:</span>
+            <span className="text-secondary/50 text-xl sm:text-2xl font-bold mb-6">
+              :
+            </span>
             <TimerDigit value={s} label="Secs" />
           </div>
 
@@ -720,7 +737,7 @@ function FlashSaleBanner() {
             <Button
               type="button"
               size="lg"
-              className="bg-secondary text-primary hover:bg-secondary/90 font-bold px-10 shadow-green text-base h-12"
+              className="bg-secondary text-primary hover:bg-secondary/90 font-bold px-8 sm:px-10 shadow-green text-base h-12"
               data-ocid="flash_sale.shop_button"
             >
               <Zap className="w-5 h-5 mr-2" />
@@ -776,17 +793,17 @@ function BundleCard({ bundle }: { bundle: BundleConfig }) {
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
       whileHover={{ y: -6 }}
-      className="glass-card rounded-3xl overflow-hidden shadow-soft hover:shadow-elevated transition-smooth group"
+      className="glass-card rounded-3xl overflow-hidden shadow-soft hover:shadow-elevated transition-smooth group w-full"
       data-ocid={bundle.ocid}
     >
       {/* Overlapping images */}
-      <div className="relative h-52 bg-gradient-to-br from-muted to-secondary/10 flex items-center justify-center overflow-hidden">
+      <div className="relative h-44 sm:h-52 bg-gradient-to-br from-muted to-secondary/10 flex items-center justify-center overflow-hidden">
         {products.map((p, i) => (
           <img
             key={p.id}
             src={p.imageUrl}
             alt={p.name}
-            className="absolute w-28 h-28 md:w-32 md:h-32 object-cover rounded-2xl shadow-elevated border-2 border-card"
+            className="absolute w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-cover rounded-2xl shadow-elevated border-2 border-card"
             style={{
               left: `${18 + i * 26}%`,
               top: "50%",
@@ -800,8 +817,8 @@ function BundleCard({ bundle }: { bundle: BundleConfig }) {
         </Badge>
       </div>
 
-      <div className="p-6">
-        <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-smooth">
+      <div className="p-5 sm:p-6">
+        <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-smooth">
           {bundle.name}
         </h3>
         <p className="text-sm text-muted-foreground mb-3">{bundle.tagline}</p>
@@ -817,7 +834,7 @@ function BundleCard({ bundle }: { bundle: BundleConfig }) {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-2xl font-bold text-primary">
+            <span className="text-xl sm:text-2xl font-bold text-primary">
               ₹{discountedPrice}
             </span>
             <span className="text-sm text-muted-foreground line-through ml-2">
@@ -827,8 +844,8 @@ function BundleCard({ bundle }: { bundle: BundleConfig }) {
           <Link to="/bundles">
             <Button
               type="button"
-              size="sm"
-              className="font-semibold"
+              size="lg"
+              className="font-semibold h-12 px-8 text-base"
               data-ocid={`${bundle.ocid}.shop_button`}
             >
               Shop Bundle
@@ -843,30 +860,32 @@ function BundleCard({ bundle }: { bundle: BundleConfig }) {
 function BundlesSection() {
   return (
     <section
-      className="py-20 bg-muted/25"
+      className="py-16 sm:py-20 bg-muted/25"
       id="bundles"
       data-ocid="bundles.section"
     >
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-5xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="text-center mb-10 sm:mb-12"
         >
           <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
             Curated Sets
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
             Wellness Bundles
           </h2>
           <div className="w-16 h-1 bg-primary rounded-full mx-auto mb-5" />
-          <p className="text-muted-foreground max-w-lg mx-auto">
+          <p className="text-muted-foreground max-w-lg mx-auto text-sm sm:text-base">
             Expertly curated combinations for targeted wellness.{" "}
             <strong className="text-primary">Save 15%</strong> on every bundle.
           </p>
         </motion.div>
-        <div className="grid md:grid-cols-2 gap-8">
+
+        {/* Grid: 1 col on mobile, 2 on md+ — centered always */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 justify-items-center">
           {BUNDLES.map((bundle) => (
             <BundleCard key={bundle.id} bundle={bundle} />
           ))}
@@ -893,7 +912,7 @@ function RemedySection() {
 
   return (
     <section
-      className="py-20 relative overflow-hidden"
+      className="py-16 sm:py-20 relative overflow-hidden"
       id="remedy"
       data-ocid="remedy.section"
       style={{
@@ -906,21 +925,21 @@ function RemedySection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-10"
+          className="text-center mb-8 sm:mb-10"
         >
           <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
             Ayurvedic Intelligence
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
             Find Your Natural Remedy
           </h2>
           <div className="w-16 h-1 bg-primary rounded-full mx-auto mb-5" />
-          <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed text-sm sm:text-base">
             Select your concern and discover the perfect natural remedy.
           </p>
         </motion.div>
 
-        <div className="flex flex-wrap gap-3 justify-center mb-10">
+        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mb-8 sm:mb-10">
           {CONDITIONS.map((c, i) => (
             <motion.button
               key={c.value}
@@ -931,7 +950,7 @@ function RemedySection() {
               transition={{ delay: i * 0.05 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => setSelected(c.value)}
-              className={`px-5 py-2.5 rounded-full border font-medium text-sm transition-smooth cursor-pointer select-none ${
+              className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border font-medium text-xs sm:text-sm transition-smooth cursor-pointer select-none ${
                 selected === c.value
                   ? "bg-primary text-primary-foreground border-primary shadow-green"
                   : "bg-card/80 text-foreground border-border hover:border-primary hover:text-primary backdrop-blur-sm"
@@ -957,7 +976,7 @@ function RemedySection() {
                 <Button
                   type="button"
                   size="lg"
-                  className="font-semibold px-10 shadow-green"
+                  className="font-semibold px-8 sm:px-10 shadow-green h-12"
                   data-ocid="remedy.see_recommendations_button"
                 >
                   <Leaf className="w-5 h-5 mr-2" />
@@ -993,24 +1012,28 @@ const ECO_PILLARS = [
 
 function EcoSection() {
   return (
-    <section className="py-20 bg-card" id="eco" data-ocid="eco.section">
+    <section
+      className="py-16 sm:py-20 bg-card"
+      id="eco"
+      data-ocid="eco.section"
+    >
       <div className="max-w-6xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-14"
+          className="text-center mb-12 sm:mb-14"
         >
           <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
             Our Earth Promise
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
             Our Commitment to Earth
           </h2>
           <div className="w-16 h-1 bg-primary rounded-full mx-auto" />
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
           {ECO_PILLARS.map((pillar, i) => (
             <motion.div
               key={pillar.title}
@@ -1018,11 +1041,13 @@ function EcoSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
-              className="relative glass-card rounded-3xl p-8 text-center hover:shadow-elevated transition-smooth hover:-translate-y-2 overflow-hidden"
+              className="relative glass-card rounded-3xl p-6 sm:p-8 text-center hover:shadow-elevated transition-smooth hover:-translate-y-2 overflow-hidden"
               data-ocid={`eco.pillar.${i + 1}`}
             >
-              <div className="text-5xl mb-5">{pillar.emoji}</div>
-              <h3 className="text-xl font-bold text-foreground mb-3">
+              <div className="text-4xl sm:text-5xl mb-4 sm:mb-5">
+                {pillar.emoji}
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-foreground mb-3">
                 {pillar.title}
               </h3>
               <p className="text-muted-foreground leading-relaxed text-sm">
@@ -1075,13 +1100,13 @@ const TESTIMONIALS = [
 function TestimonialsSection() {
   return (
     <section
-      className="py-20"
+      className="py-16 sm:py-20"
       id="testimonials"
       data-ocid="testimonials.section"
       style={{ background: "oklch(0.98 0.02 90)" }}
     >
       <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10 sm:mb-12">
           <p
             className="text-sm font-semibold tracking-widest uppercase mb-3"
             style={{ color: "#004a38" }}
@@ -1089,7 +1114,7 @@ function TestimonialsSection() {
             Real Stories
           </p>
           <h2
-            className="text-4xl md:text-5xl font-bold mb-3"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3"
             style={{ color: "#004a38" }}
           >
             What Our Customers Say
@@ -1100,7 +1125,7 @@ function TestimonialsSection() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {TESTIMONIALS.map((t, i) => (
             <motion.div
               key={t.name}
@@ -1108,7 +1133,7 @@ function TestimonialsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.35, delay: i * 0.07 }}
-              className="bg-card rounded-xl p-5 shadow-sm flex flex-col gap-3"
+              className="bg-card rounded-xl p-4 sm:p-5 shadow-sm flex flex-col gap-3"
               data-ocid={`testimonial.card.${i + 1}`}
             >
               {/* Stars */}
@@ -1168,32 +1193,32 @@ const B2B_STATS = [
 function B2BSection() {
   return (
     <section
-      className="gradient-hero py-20 relative overflow-hidden"
+      className="gradient-hero py-16 sm:py-20 relative overflow-hidden"
       id="b2b"
       data-ocid="b2b.section"
     >
       <div className="max-w-6xl mx-auto px-4 relative z-10">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="space-y-6"
+            className="space-y-5 sm:space-y-6"
           >
             <div>
               <p className="text-secondary/55 text-sm font-semibold tracking-widest uppercase mb-3">
                 Wholesale &amp; Export
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold text-secondary leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-secondary leading-tight">
                 Partner with Forestheals
               </h2>
             </div>
-            <p className="text-secondary/65 text-base leading-relaxed">
+            <p className="text-secondary/65 text-sm sm:text-base leading-relaxed">
               Scale your wellness business with Forestheals' premium bulk supply
               program. Competitive wholesale pricing, custom labelling, and
               dedicated export support for international buyers.
             </p>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2 sm:space-y-2.5">
               {[
                 "Custom branding & private label options",
                 "Competitive bulk pricing from 10kg+",
@@ -1222,7 +1247,7 @@ function B2BSection() {
             </Link>
           </motion.div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {B2B_STATS.map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -1230,13 +1255,13 @@ function B2BSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12 }}
-                className="glass-card rounded-2xl p-5 flex items-center gap-6"
+                className="glass-card rounded-2xl p-4 sm:p-5 flex items-center gap-4 sm:gap-6"
                 data-ocid={`b2b.stat.${i + 1}`}
               >
-                <span className="text-4xl md:text-5xl font-bold text-secondary">
+                <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-secondary">
                   {stat.value}
                 </span>
-                <span className="text-secondary/60 text-base">
+                <span className="text-secondary/60 text-sm sm:text-base">
                   {stat.label}
                 </span>
               </motion.div>
@@ -1252,7 +1277,7 @@ function B2BSection() {
 function FinalCTASection() {
   return (
     <section
-      className="py-20 bg-background"
+      className="py-16 sm:py-20 bg-background"
       id="final-cta"
       data-ocid="final_cta.section"
       style={{ background: "oklch(0.97 0.015 90)" }}
@@ -1262,33 +1287,33 @@ function FinalCTASection() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="space-y-6"
+          className="space-y-5 sm:space-y-6"
         >
           <div className="text-5xl mb-2">🌿</div>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground leading-tight">
             Start Your Natural Healing Journey Today
           </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
             Join thousands of happy customers who chose the natural way
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link to="/products">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Link to="/products" className="w-full sm:w-auto">
               <Button
                 type="button"
                 size="lg"
-                className="font-semibold px-10 shadow-green text-base h-13"
+                className="w-full sm:w-auto font-semibold px-8 sm:px-10 shadow-green text-base h-12"
                 data-ocid="final_cta.shop_button"
               >
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Shop Now
               </Button>
             </Link>
-            <Link to="/recommend">
+            <Link to="/recommend" className="w-full sm:w-auto">
               <Button
                 type="button"
                 variant="outline"
                 size="lg"
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-10 text-base"
+                className="w-full sm:w-auto border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-8 sm:px-10 text-base h-12"
                 data-ocid="final_cta.recommend_button"
               >
                 <Leaf className="w-5 h-5 mr-2" />
@@ -1326,7 +1351,7 @@ function NewsletterSection() {
 
   return (
     <section
-      className="py-20 bg-card"
+      className="py-16 sm:py-20 bg-card"
       id="community"
       data-ocid="newsletter.section"
     >
@@ -1335,11 +1360,11 @@ function NewsletterSection() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="space-y-6"
+          className="space-y-5 sm:space-y-6"
         >
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Users className="w-8 h-8 text-primary" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Users className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
             </div>
           </div>
 
@@ -1347,11 +1372,11 @@ function NewsletterSection() {
             <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
               Join Our Community
             </p>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
               Join Our Wellness Community
             </h2>
             <div className="w-16 h-1 bg-primary rounded-full mx-auto mb-5" />
-            <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed text-sm sm:text-base">
               Get exclusive Ayurvedic recipes, wellness tips, early access to
               new products, and members-only discounts.
             </p>
@@ -1359,7 +1384,7 @@ function NewsletterSection() {
 
           <form
             onSubmit={handleSubscribe}
-            className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+            className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full"
           >
             <Input
               type="email"
@@ -1367,7 +1392,7 @@ function NewsletterSection() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-12 text-base bg-background"
+              className="h-12 text-base bg-background flex-1"
               data-ocid="newsletter.email_input"
             />
             <Button
@@ -1392,29 +1417,6 @@ function NewsletterSection() {
               )}
             </Button>
           </form>
-
-          <p className="text-xs text-muted-foreground">
-            No spam, ever. Unsubscribe anytime. Join{" "}
-            <span className="font-semibold text-primary">2,400+</span> wellness
-            enthusiasts.
-          </p>
-
-          <div className="flex justify-center gap-6 pt-2">
-            {(["🌿", "🌱", "🍃", "✨"] as const).map((emoji, i) => (
-              <motion.span
-                key={emoji}
-                animate={{ y: [0, -6, 0] }}
-                transition={{
-                  duration: 2,
-                  repeat: Number.POSITIVE_INFINITY,
-                  delay: i * 0.4,
-                }}
-                className="text-2xl"
-              >
-                {emoji}
-              </motion.span>
-            ))}
-          </div>
         </motion.div>
       </div>
     </section>
@@ -1424,7 +1426,7 @@ function NewsletterSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function HomePage() {
   return (
-    <div className="min-w-0" data-ocid="home.page">
+    <div className="min-h-screen" data-ocid="home.page">
       <OfferBanner />
       <HeroSection />
       <TrustBadgesSection />

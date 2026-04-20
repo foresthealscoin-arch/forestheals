@@ -38,6 +38,7 @@ export function useProducts(filter?: ProductFilter) {
             ratings: p.ratings,
             reviewCount: Number(p.reviewCount),
             featured: p.featured,
+            bestseller: p.bestseller,
             discount: Number(p.discount),
             bundleIds: p.bundleIds.map(Number),
           }));
@@ -120,6 +121,7 @@ export function useFeaturedProducts() {
             ratings: p.ratings,
             reviewCount: Number(p.reviewCount),
             featured: p.featured,
+            bestseller: p.bestseller,
             discount: Number(p.discount),
             bundleIds: p.bundleIds.map(Number),
           }));
@@ -306,6 +308,7 @@ export function useCreateProduct() {
         imageKey: input.imageKey,
         stock: BigInt(input.stock),
         featured: input.featured,
+        bestseller: input.bestseller ?? false,
         discount: BigInt(input.discount ?? 0),
         bundleIds: (input.bundleIds ?? []).map(BigInt),
       });

@@ -7,6 +7,14 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface UserProfile {
+    id: Principal;
+    name: string;
+    createdAt: bigint;
+    email: string;
+    addresses: Array<Address>;
+    phone: string;
+}
 export interface AdminTask {
     id: string;
     title: string;
@@ -19,14 +27,13 @@ export interface AdminTask {
     category: string;
     priority: string;
 }
-export interface Address {
-    tag: string;
+export interface Address__1 {
     street: string;
     country: string;
+    gstNumber?: string;
     city: string;
     postalCode: string;
     state: string;
-    isDefault: boolean;
 }
 export interface TransformationOutput {
     status: bigint;
@@ -40,6 +47,15 @@ export interface AdminExpense {
     description: string;
     category: string;
     amount: bigint;
+}
+export interface Address {
+    tag: string;
+    street: string;
+    country: string;
+    city: string;
+    postalCode: string;
+    state: string;
+    isDefault: boolean;
 }
 export interface AddReviewInput {
     text: string;
@@ -124,7 +140,6 @@ export interface B2BInquiryInput {
     quantity: string;
     phone: string;
 }
-export type Category = string;
 export interface Review {
     id: bigint;
     verified: boolean;
@@ -135,6 +150,7 @@ export interface Review {
     approved: boolean;
     rating: bigint;
 }
+export type Category = string;
 export interface BlogPost {
     id: string;
     metaDescription: string;
@@ -225,17 +241,17 @@ export interface AdminStats {
     totalOrders: bigint;
     totalRevenue: bigint;
 }
-export interface CreateFlashSaleInput {
-    startTime: bigint;
-    endTime: bigint;
-    discountPercent: bigint;
-    productId: bigint;
-}
 export interface CreateCouponInput {
     expiryDate: bigint;
     code: string;
     discountPercent: bigint;
     maxUses: bigint;
+}
+export interface CreateFlashSaleInput {
+    startTime: bigint;
+    endTime: bigint;
+    discountPercent: bigint;
+    productId: bigint;
 }
 export interface AdminNotification {
     id: string;
@@ -253,10 +269,17 @@ export interface TeamMember {
     role: string;
     email: string;
 }
-export interface CartItem {
-    productId: bigint;
-    quantity: bigint;
-    price: bigint;
+export interface EnrichedCustomerProfile {
+    id: Principal;
+    status: string;
+    totalOrders: bigint;
+    name: string;
+    createdAt: bigint;
+    email: string;
+    totalSpend: bigint;
+    phone: string;
+    lastLogin?: bigint;
+    activityCount: bigint;
 }
 export interface FlashSale {
     id: bigint;
@@ -265,6 +288,11 @@ export interface FlashSale {
     endTime: bigint;
     discountPercent: bigint;
     productId: bigint;
+}
+export interface CartItem {
+    productId: bigint;
+    quantity: bigint;
+    price: bigint;
 }
 export interface AdminCoupon {
     id: string;
@@ -279,13 +307,12 @@ export interface AdminCoupon {
     description: string;
     maxUses: bigint;
 }
-export interface Address__1 {
-    street: string;
-    country: string;
-    gstNumber?: string;
-    city: string;
-    postalCode: string;
-    state: string;
+export interface UserActivity {
+    id: bigint;
+    activityType: ActivityType;
+    metadata: string;
+    userId: Principal;
+    timestamp: bigint;
 }
 export interface Product {
     id: bigint;
@@ -303,13 +330,22 @@ export interface Product {
     bestseller: boolean;
     reviewCount: bigint;
 }
-export interface UserProfile {
-    id: Principal;
-    name: string;
-    createdAt: bigint;
-    email: string;
-    addresses: Array<Address>;
-    phone: string;
+export enum ActivityType {
+    Login = "Login",
+    WishlistRemove = "WishlistRemove",
+    CouponUsed = "CouponUsed",
+    OrderPlaced = "OrderPlaced",
+    ProductView = "ProductView",
+    Logout = "Logout",
+    NewsletterSignup = "NewsletterSignup",
+    ProfileUpdated = "ProfileUpdated",
+    CartAdd = "CartAdd",
+    SearchQuery = "SearchQuery",
+    ReviewSubmitted = "ReviewSubmitted",
+    WishlistAdd = "WishlistAdd",
+    B2BInquiry = "B2BInquiry",
+    CartRemove = "CartRemove",
+    AddressAdded = "AddressAdded"
 }
 export enum OrderStatus {
     shipped = "shipped",
@@ -364,12 +400,19 @@ export interface backendInterface {
     getAdminNotifications(): Promise<Array<AdminNotification>>;
     getAdminStats(): Promise<AdminStats>;
     getAdminTasks(): Promise<Array<AdminTask>>;
+    getAllActivities(): Promise<Array<UserActivity>>;
     getAllBlogPosts(): Promise<Array<BlogPost>>;
     getAllCustomers(): Promise<Array<UserProfile>>;
+    getAllCustomersEnriched(): Promise<Array<EnrichedCustomerProfile>>;
     getAllOrders(): Promise<Array<Order>>;
     getAllReviews(): Promise<Array<Review>>;
     getAnalytics(): Promise<{
         totalOrders: bigint;
+        totalActivities: bigint;
+        newUsersToday: bigint;
+        recentActivities: Array<UserActivity>;
+        activeUsersToday: bigint;
+        totalRegisteredUsers: bigint;
         totalExpenses: bigint;
         totalRevenue: bigint;
         totalCustomers: bigint;
@@ -381,6 +424,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getCart(): Promise<Array<CartItem>>;
     getCoupons(): Promise<Array<Coupon>>;
+    getCustomerProfile(userId: Principal): Promise<EnrichedCustomerProfile | null>;
     getExpenses(): Promise<Array<AdminExpense>>;
     getExpensesByCategory(): Promise<Array<[string, bigint]>>;
     getInventoryItems(): Promise<Array<InventoryItem>>;
@@ -395,6 +439,7 @@ export interface backendInterface {
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getTasks(): Promise<Array<AdminTask>>;
     getTeamMembers(): Promise<Array<TeamMember>>;
+    getUserActivities(userId: Principal | null): Promise<Array<UserActivity>>;
     getUserOrders(): Promise<Array<Order>>;
     getUserProfile(): Promise<UserProfile | null>;
     getWishlist(): Promise<Array<bigint>>;
@@ -409,6 +454,7 @@ export interface backendInterface {
     listFeaturedProducts(): Promise<Array<Product>>;
     listProducts(filter: ProductFilter): Promise<Array<Product>>;
     listUserOrders(): Promise<Array<Order>>;
+    logUserActivity(activityType: ActivityType, metadata: string): Promise<UserActivity>;
     markNotificationRead(id: string): Promise<boolean>;
     placeOrder(input: CreateOrderInput): Promise<Order>;
     publishBlogPost(id: string): Promise<boolean>;

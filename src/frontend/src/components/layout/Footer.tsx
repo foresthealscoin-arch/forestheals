@@ -66,22 +66,22 @@ export function Footer() {
     >
       {/* Main footer */}
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10">
           {/* Brand — logo large, borderless, no box */}
-          <div className="lg:col-span-1">
-            <Link to="/" className="inline-flex items-center mb-5">
+          <div className="lg:col-span-1 flex flex-col items-center sm:items-start text-center sm:text-left">
+            <Link to="/" className="inline-flex items-center mb-4 sm:mb-5">
               <img
                 src="/assets/logo.png"
                 alt="Forestheals"
-                className="h-20 sm:h-24 w-auto object-contain drop-shadow"
-                style={{ maxWidth: "200px" }}
+                className="h-16 sm:h-20 w-auto object-contain drop-shadow"
+                style={{ maxWidth: "180px" }}
               />
             </Link>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-xs">
               From forest to homes. Premium Ayurvedic wellness products crafted
               with ancient wisdom and modern science.
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-center sm:justify-start">
               {SOCIAL_LINKS.map(({ icon: Icon, label, href }) => (
                 <a
                   key={label}
@@ -89,7 +89,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-smooth"
+                  className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-smooth"
                   data-ocid={`footer.social.${label.toLowerCase()}.link`}
                 >
                   <Icon className="w-4 h-4" />
@@ -99,7 +99,7 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="text-center sm:text-left">
             <h3 className="font-semibold text-foreground mb-4 text-sm uppercase tracking-wider">
               Explore
             </h3>
@@ -119,7 +119,7 @@ export function Footer() {
           </div>
 
           {/* Legal */}
-          <div>
+          <div className="text-center sm:text-left">
             <h3 className="font-semibold text-foreground mb-4 text-sm uppercase tracking-wider">
               Legal
             </h3>
@@ -155,7 +155,7 @@ export function Footer() {
           </div>
 
           {/* Newsletter */}
-          <div>
+          <div className="text-center sm:text-left">
             <h3 className="font-semibold text-foreground mb-2 text-sm uppercase tracking-wider">
               Join the Community
             </h3>
@@ -190,11 +190,11 @@ export function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-border">
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+          <p className="text-xs text-muted-foreground text-center">
             © {new Date().getFullYear()} Forestheals. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground text-center">
             Built with love using{" "}
             <a
               href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}

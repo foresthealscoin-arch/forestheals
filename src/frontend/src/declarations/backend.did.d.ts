@@ -10,6 +10,21 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type ActivityType = { 'Login' : null } |
+  { 'WishlistRemove' : null } |
+  { 'CouponUsed' : null } |
+  { 'OrderPlaced' : null } |
+  { 'ProductView' : null } |
+  { 'Logout' : null } |
+  { 'NewsletterSignup' : null } |
+  { 'ProfileUpdated' : null } |
+  { 'CartAdd' : null } |
+  { 'SearchQuery' : null } |
+  { 'ReviewSubmitted' : null } |
+  { 'WishlistAdd' : null } |
+  { 'B2BInquiry' : null } |
+  { 'CartRemove' : null } |
+  { 'AddressAdded' : null };
 export interface AddReviewInput {
   'text' : string,
   'productId' : bigint,
@@ -163,6 +178,18 @@ export interface CreateProductInput {
   'price' : bigint,
   'bestseller' : boolean,
 }
+export interface EnrichedCustomerProfile {
+  'id' : Principal,
+  'status' : string,
+  'totalOrders' : bigint,
+  'name' : string,
+  'createdAt' : bigint,
+  'email' : string,
+  'totalSpend' : bigint,
+  'phone' : string,
+  'lastLogin' : [] | [bigint],
+  'activityCount' : bigint,
+}
 export interface FlashSale {
   'id' : bigint,
   'startTime' : bigint,
@@ -296,6 +323,13 @@ export interface UpdateUserInput {
   'addresses' : Array<Address>,
   'phone' : string,
 }
+export interface UserActivity {
+  'id' : bigint,
+  'activityType' : ActivityType,
+  'metadata' : string,
+  'userId' : Principal,
+  'timestamp' : bigint,
+}
 export interface UserProfile {
   'id' : Principal,
   'name' : string,
@@ -354,14 +388,21 @@ export interface _SERVICE {
   'getAdminNotifications' : ActorMethod<[], Array<AdminNotification>>,
   'getAdminStats' : ActorMethod<[], AdminStats>,
   'getAdminTasks' : ActorMethod<[], Array<AdminTask>>,
+  'getAllActivities' : ActorMethod<[], Array<UserActivity>>,
   'getAllBlogPosts' : ActorMethod<[], Array<BlogPost>>,
   'getAllCustomers' : ActorMethod<[], Array<UserProfile>>,
+  'getAllCustomersEnriched' : ActorMethod<[], Array<EnrichedCustomerProfile>>,
   'getAllOrders' : ActorMethod<[], Array<Order>>,
   'getAllReviews' : ActorMethod<[], Array<Review>>,
   'getAnalytics' : ActorMethod<
     [],
     {
       'totalOrders' : bigint,
+      'totalActivities' : bigint,
+      'newUsersToday' : bigint,
+      'recentActivities' : Array<UserActivity>,
+      'activeUsersToday' : bigint,
+      'totalRegisteredUsers' : bigint,
       'totalExpenses' : bigint,
       'totalRevenue' : bigint,
       'totalCustomers' : bigint,
@@ -374,6 +415,10 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCart' : ActorMethod<[], Array<CartItem>>,
   'getCoupons' : ActorMethod<[], Array<Coupon>>,
+  'getCustomerProfile' : ActorMethod<
+    [Principal],
+    [] | [EnrichedCustomerProfile]
+  >,
   'getExpenses' : ActorMethod<[], Array<AdminExpense>>,
   'getExpensesByCategory' : ActorMethod<[], Array<[string, bigint]>>,
   'getInventoryItems' : ActorMethod<[], Array<InventoryItem>>,
@@ -388,6 +433,7 @@ export interface _SERVICE {
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getTasks' : ActorMethod<[], Array<AdminTask>>,
   'getTeamMembers' : ActorMethod<[], Array<TeamMember>>,
+  'getUserActivities' : ActorMethod<[[] | [Principal]], Array<UserActivity>>,
   'getUserOrders' : ActorMethod<[], Array<Order>>,
   'getUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getWishlist' : ActorMethod<[], Array<bigint>>,
@@ -402,6 +448,7 @@ export interface _SERVICE {
   'listFeaturedProducts' : ActorMethod<[], Array<Product>>,
   'listProducts' : ActorMethod<[ProductFilter], Array<Product>>,
   'listUserOrders' : ActorMethod<[], Array<Order>>,
+  'logUserActivity' : ActorMethod<[ActivityType, string], UserActivity>,
   'markNotificationRead' : ActorMethod<[string], boolean>,
   'placeOrder' : ActorMethod<[CreateOrderInput], Order>,
   'publishBlogPost' : ActorMethod<[string], boolean>,

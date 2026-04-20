@@ -41,13 +41,7 @@ const DISCOUNT = 15;
 
 type SeedProduct = (typeof PRODUCTS_SEED_DATA)[0];
 
-function BundleCard({
-  bundle,
-  index,
-}: {
-  bundle: Bundle;
-  index: number;
-}) {
+function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
   const addItem = useCartStore((s) => s.addItem);
   const [isAdded, setIsAdded] = useState(false);
 
@@ -61,7 +55,6 @@ function BundleCard({
 
   const handleAddBundle = () => {
     if (isAdded) return;
-    // Add all products synchronously — no delays
     for (const p of products) {
       addItem({
         productId: p.id,
@@ -80,25 +73,27 @@ function BundleCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.15 }}
-      className="glass-card rounded-3xl overflow-hidden shadow-elevated hover:shadow-green transition-smooth"
+      className="glass-card rounded-3xl overflow-hidden shadow-elevated hover:shadow-green transition-smooth w-full"
       data-ocid={`bundles.card.${index + 1}`}
     >
-      {/* Product images */}
-      <div className="relative bg-muted/50 p-6">
+      {/* Product images — centered */}
+      <div className="relative bg-muted/50 p-6 flex flex-col items-center">
         <div className="absolute top-4 right-4 z-10">
           <Badge className="bg-destructive text-destructive-foreground font-bold text-sm px-3 py-1">
             Save {DISCOUNT}%
           </Badge>
         </div>
-        <div className="flex items-center justify-center gap-3">
+        {/* Centered product images with "+" separators */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3 w-full">
           {products.map((product, i) => (
-            <div key={product.id} className="relative">
+            <div key={product.id} className="relative flex items-center">
               <div
                 className="rounded-2xl overflow-hidden shadow-soft border-2 border-card"
                 style={{
-                  width: i === 1 ? 112 : 84,
-                  height: i === 1 ? 112 : 84,
+                  width: i === 1 ? 100 : 76,
+                  height: i === 1 ? 100 : 76,
                   opacity: i !== 1 ? 0.85 : 1,
+                  flexShrink: 0,
                 }}
               >
                 <img
@@ -109,7 +104,7 @@ function BundleCard({
                 />
               </div>
               {i < products.length - 1 && (
-                <span className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 text-primary font-bold text-lg">
+                <span className="text-primary font-bold text-lg ml-2 sm:ml-3">
                   +
                 </span>
               )}
@@ -119,7 +114,7 @@ function BundleCard({
       </div>
 
       {/* Info */}
-      <div className="p-6">
+      <div className="p-5 sm:p-6">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xl">{bundle.emoji}</span>
           <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
@@ -171,7 +166,7 @@ function BundleCard({
             type="button"
             size="lg"
             className={cn(
-              "w-full transition-all duration-300",
+              "w-full transition-all duration-300 h-12",
               isAdded && "bg-green-600 hover:bg-green-600",
             )}
             onClick={handleAddBundle}
@@ -200,7 +195,7 @@ export default function BundlesPage() {
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <div
-        className="gradient-hero py-16 px-4"
+        className="gradient-hero py-14 sm:py-16 px-4"
         data-ocid="bundles.hero.section"
       >
         <div className="max-w-3xl mx-auto text-center">
@@ -213,37 +208,48 @@ export default function BundlesPage() {
               <Sparkles className="w-3.5 h-3.5 mr-1" />
               Save 15% on Bundles
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground font-display mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground font-display mb-4">
               Wellness Bundles — Better Together
             </h1>
-            <p className="text-lg text-primary-foreground/75">
+            <p className="text-base sm:text-lg text-primary-foreground/75">
               Curated Ayurvedic bundles at 15% savings
             </p>
           </motion.div>
         </div>
       </div>
 
-      {/* Bundles Grid */}
-      <div className="max-w-5xl mx-auto px-4 py-14">
+      {/* Bundles Grid — centered, max-w-5xl */}
+      <div className="max-w-5xl mx-auto px-4 py-10 sm:py-14">
+        {/* Section heading */}
+        <div className="text-center mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+            Our Product Bundles
+          </h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Expertly curated for your wellness journey
+          </p>
+        </div>
+
+        {/* Grid: 1 col on mobile, 2 on md+ — always centered */}
         <div
-          className="grid md:grid-cols-2 gap-8 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 justify-items-center mb-8"
           data-ocid="bundles.list"
         >
           {BUNDLES.map((bundle, i) => (
             <BundleCard key={bundle.id} bundle={bundle} index={i} />
           ))}
 
-          {/* Coming Soon */}
+          {/* Coming Soon — centered */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="glass-card rounded-3xl border-2 border-dashed border-border p-10 flex flex-col items-center justify-center text-center shadow-soft"
+            className="glass-card rounded-3xl border-2 border-dashed border-border p-8 sm:p-10 flex flex-col items-center justify-center text-center shadow-soft w-full"
             data-ocid="bundles.coming_soon.card"
           >
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <Sparkles className="w-8 h-8 text-muted-foreground" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-bold text-foreground mb-2">
               More Coming Soon
@@ -264,7 +270,7 @@ export default function BundlesPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45 }}
-          className="gradient-cream rounded-2xl p-6 border border-border/50 text-center"
+          className="gradient-cream rounded-2xl p-5 sm:p-6 border border-border/50 text-center"
         >
           <p className="text-muted-foreground text-sm">
             All bundles include free shipping · Sourced from certified organic

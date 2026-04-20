@@ -68,6 +68,7 @@ const EMPTY_FORM: CreateProductInput = {
   imageKey: "",
   stock: 0,
   featured: false,
+  bestseller: false,
   discount: 0,
   bundleIds: [],
 };
@@ -112,6 +113,7 @@ export default function AdminProductsPage() {
       imageKey: p.imageKey,
       stock: p.stock,
       featured: p.featured,
+      bestseller: p.bestseller,
       discount: p.discount,
       bundleIds: p.bundleIds,
     });

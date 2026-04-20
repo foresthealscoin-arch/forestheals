@@ -400,8 +400,8 @@ export default function DashboardPage() {
                 {principal ? `${principal.slice(0, 20)}…` : "Not connected"}
               </p>
             </div>
-            {/* Stats strip */}
-            <div className="hidden sm:flex gap-6">
+            {/* Stats strip — hidden on xs, shown on sm+ */}
+            <div className="hidden sm:flex gap-4 sm:gap-6">
               {[
                 { icon: Package, label: "Orders", value: orders?.length ?? 0 },
                 { icon: Heart, label: "Wishlist", value: 3 },

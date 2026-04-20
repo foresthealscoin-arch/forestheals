@@ -82,7 +82,7 @@ export function Header() {
         )}
       >
         <div className="container max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo — large, borderless, plain img */}
             <Link
               to="/"
@@ -92,8 +92,8 @@ export function Header() {
               <img
                 src="/assets/logo.png"
                 alt="Forestheals"
-                className="h-16 sm:h-20 w-auto object-contain drop-shadow-md"
-                style={{ maxWidth: "220px" }}
+                className="h-10 sm:h-14 lg:h-16 w-auto object-contain drop-shadow-md"
+                style={{ maxWidth: "180px" }}
               />
             </Link>
 
@@ -248,7 +248,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={toggleMenu}
-                className="lg:hidden p-2 rounded-lg text-foreground/60 hover:text-foreground hover:bg-muted transition-smooth"
+                className="lg:hidden p-2.5 rounded-lg text-foreground/60 hover:text-foreground hover:bg-muted transition-smooth min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="Toggle menu"
                 data-ocid="header.mobile_menu.toggle"
               >

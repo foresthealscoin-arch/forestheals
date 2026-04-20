@@ -157,7 +157,7 @@ export default function CartPage() {
           </Button>
         </motion.div>
 
-        <div className="grid lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Cart Items — spans 3 cols */}
           <div className="lg:col-span-3 space-y-4">
             <AnimatePresence mode="popLayout">

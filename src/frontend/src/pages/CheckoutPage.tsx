@@ -297,7 +297,7 @@ export default function CheckoutPage() {
 
         {/* Step progress */}
         <div
-          className="flex items-center gap-0 mb-10 max-w-sm mx-auto lg:mx-0"
+          className="flex items-center gap-0 mb-8 sm:mb-10 max-w-xs sm:max-w-sm mx-auto"
           data-ocid="checkout.steps.nav"
         >
           {steps.map((s, idx) => (
@@ -339,7 +339,7 @@ export default function CheckoutPage() {
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form Column */}
           <div className="lg:col-span-3">
             <AnimatePresence mode="wait">

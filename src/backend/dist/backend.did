@@ -24,6 +24,14 @@ type UserProfile =
    name: text;
    phone: text;
  };
+type UserActivity = 
+ record {
+   activityType: ActivityType;
+   id: nat;
+   metadata: text;
+   timestamp: int;
+   userId: principal;
+ };
 type UpdateUserInput = 
  record {
    addresses: vec Address;
@@ -180,6 +188,19 @@ type FlashSale =
    id: nat;
    productId: nat;
    startTime: int;
+ };
+type EnrichedCustomerProfile = 
+ record {
+   activityCount: nat;
+   createdAt: int;
+   email: text;
+   id: principal;
+   lastLogin: opt int;
+   name: text;
+   phone: text;
+   status: text;
+   totalOrders: nat;
+   totalSpend: nat;
  };
 type CreateProductInput = 
  record {
@@ -352,6 +373,24 @@ type AddReviewInput =
    rating: nat;
    "text": text;
  };
+type ActivityType = 
+ variant {
+   AddressAdded;
+   B2BInquiry;
+   CartAdd;
+   CartRemove;
+   CouponUsed;
+   Login;
+   Logout;
+   NewsletterSignup;
+   OrderPlaced;
+   ProductView;
+   ProfileUpdated;
+   ReviewSubmitted;
+   SearchQuery;
+   WishlistAdd;
+   WishlistRemove;
+ };
 service : {
   _initializeAccessControl: () -> ();
   addExpense: (expense: AdminExpense) -> (AdminExpense);
@@ -391,17 +430,24 @@ service : {
   getAdminNotifications: () -> (vec AdminNotification) query;
   getAdminStats: () -> (AdminStats) query;
   getAdminTasks: () -> (vec AdminTask) query;
+  getAllActivities: () -> (vec UserActivity) query;
   getAllBlogPosts: () -> (vec BlogPost) query;
   getAllCustomers: () -> (vec UserProfile) query;
+  getAllCustomersEnriched: () -> (vec EnrichedCustomerProfile) query;
   getAllOrders: () -> (vec Order) query;
   getAllReviews: () -> (vec Review) query;
   getAnalytics: () ->
    (record {
+      activeUsersToday: nat;
       avgOrderValue: nat;
       netProfit: int;
+      newUsersToday: nat;
+      recentActivities: vec UserActivity;
+      totalActivities: nat;
       totalCustomers: nat;
       totalExpenses: nat;
       totalOrders: nat;
+      totalRegisteredUsers: nat;
       totalRevenue: nat;
     }) query;
   getB2BInquiries: () -> (vec B2BInquiry) query;
@@ -409,6 +455,8 @@ service : {
   getCallerUserRole: () -> (UserRole) query;
   getCart: () -> (vec CartItem) query;
   getCoupons: () -> (vec Coupon) query;
+  getCustomerProfile: (userId: principal) ->
+   (opt EnrichedCustomerProfile) query;
   getExpenses: () -> (vec AdminExpense) query;
   getExpensesByCategory: () -> (vec record {
                                       text;
@@ -426,6 +474,7 @@ service : {
   getStripeSessionStatus: (sessionId: text) -> (StripeSessionStatus);
   getTasks: () -> (vec AdminTask) query;
   getTeamMembers: () -> (vec TeamMember) query;
+  getUserActivities: (userId: opt principal) -> (vec UserActivity) query;
   getUserOrders: () -> (vec Order) query;
   getUserProfile: () -> (opt UserProfile) query;
   getWishlist: () -> (vec nat) query;
@@ -440,6 +489,8 @@ service : {
   listFeaturedProducts: () -> (vec Product) query;
   listProducts: (filter: ProductFilter) -> (vec Product) query;
   listUserOrders: () -> (vec Order) query;
+  logUserActivity: (activityType: ActivityType, metadata: text) ->
+   (UserActivity);
   markNotificationRead: (id: text) -> (bool);
   placeOrder: (input: CreateOrderInput) -> (Order);
   publishBlogPost: (id: text) -> (bool);

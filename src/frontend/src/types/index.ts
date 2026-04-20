@@ -10,6 +10,7 @@ export interface Product {
   ratings: number;
   reviewCount: number;
   featured: boolean;
+  bestseller: boolean;
   discount: number;
   bundleIds: number[];
 }
@@ -165,6 +166,7 @@ export interface CreateProductInput {
   imageKey: string;
   stock: number;
   featured: boolean;
+  bestseller: boolean;
   discount: number;
   bundleIds: number[];
 }

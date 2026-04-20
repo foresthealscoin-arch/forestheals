@@ -30,4 +30,43 @@ module {
     phone : Text;
     addresses : [Address];
   };
+
+  public type ActivityType = {
+    #Login;
+    #Logout;
+    #ProductView;
+    #CartAdd;
+    #CartRemove;
+    #WishlistAdd;
+    #WishlistRemove;
+    #SearchQuery;
+    #OrderPlaced;
+    #ReviewSubmitted;
+    #ProfileUpdated;
+    #AddressAdded;
+    #NewsletterSignup;
+    #CouponUsed;
+    #B2BInquiry;
+  };
+
+  public type UserActivity = {
+    id : Nat;
+    userId : Principal;
+    activityType : ActivityType;
+    metadata : Text; // JSON string: product ID, search query, etc.
+    timestamp : Int;
+  };
+
+  public type EnrichedCustomerProfile = {
+    id : Principal;
+    name : Text;
+    email : Text;
+    phone : Text;
+    createdAt : Int;
+    totalOrders : Nat;
+    totalSpend : Nat;
+    lastLogin : ?Int;
+    activityCount : Nat;
+    status : Text; // "New" | "Active" | "VIP"
+  };
 };
