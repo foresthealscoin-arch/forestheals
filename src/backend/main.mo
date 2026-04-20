@@ -8,6 +8,7 @@ import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
 import OutCall "mo:caffeineai-http-outcalls/outcall";
 import Stripe "mo:caffeineai-stripe/stripe";
 import ProductLib "lib/products";
+import Migration "migration";
 
 import ProductTypes "types/products";
 import OrderTypes "types/orders";
@@ -16,6 +17,7 @@ import CouponTypes "types/coupons";
 import B2BTypes "types/b2b";
 import FlashSaleTypes "types/flashsales";
 import AdminTypes "types/admin";
+import UserTypes "types/users";
 
 import ProductsApi "mixins/products-api";
 import CartApi "mixins/cart-api";
@@ -29,7 +31,9 @@ import RecommendationsApi "mixins/recommendations-api";
 import FlashSalesApi "mixins/flashsales-api";
 import AdminApi "mixins/admin-api";
 import AdminExtendedApi "mixins/admin-extended-api";
+import UsersApi "mixins/users-api";
 
+(with migration = Migration.run)
 actor {
   // --- Authorization ---
   let accessControlState = AccessControl.initState();
@@ -55,6 +59,7 @@ actor {
   let emailStore = Set.empty<Text>();
   let inquiryStore = List.empty<B2BTypes.B2BInquiry>();
   let flashSaleStore = List.empty<FlashSaleTypes.FlashSale>();
+  let userStore = Map.empty<Principal, UserTypes.UserProfile>();
 
   // --- Admin extended state ---
   let teamMemberStore = List.empty<AdminTypes.TeamMember>();
@@ -75,7 +80,7 @@ actor {
   // --- Domain API Mixins ---
   include ProductsApi(accessControlState, productStore, nextProductId);
   include CartApi(accessControlState, cartStore);
-  include OrdersApi(accessControlState, orderStore, nextOrderId, couponStore);
+  include OrdersApi(accessControlState, orderStore, nextOrderId, couponStore, productStore);
   include ReviewsApi(accessControlState, reviewStore, nextReviewId, productStore);
   include WishlistApi(accessControlState, wishlistStore);
   include CouponsApi(accessControlState, couponStore);
@@ -85,6 +90,7 @@ actor {
   include FlashSalesApi(accessControlState, flashSaleStore, nextFlashSaleId);
   include AdminApi(accessControlState, productStore, orderStore);
   include AdminExtendedApi(teamMemberStore, taskStore, expenseStore, blogPostStore, notificationStore, storeSettingsState, adminCouponStore, inventoryStore, orderStore);
+  include UsersApi(accessControlState, userStore);
 
   // --- Stripe endpoints ---
   public query func isStripeConfigured() : async Bool {

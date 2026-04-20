@@ -5,12 +5,10 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowDown,
   Building2,
+  Check,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Heart,
   Leaf,
-  Recycle,
   Shield,
   ShoppingBag,
   Sparkles,
@@ -22,9 +20,10 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ProductCard } from "../components/ui/ProductCard";
 import { useFeaturedProducts } from "../hooks/useProducts";
 import { PRODUCTS_SEED_DATA } from "../lib/seedData";
+import { useCartStore } from "../stores/useCartStore";
+import type { Product } from "../types";
 
 // ─── Offer Banner ────────────────────────────────────────────────────────────
 function OfferBanner() {
@@ -311,6 +310,49 @@ function TrustBadgesSection() {
   );
 }
 
+// ─── Best Seller Add Button ───────────────────────────────────────────────────
+function BestSellerAddButton({ product }: { product: Product }) {
+  const addItem = useCartStore((s) => s.addItem);
+  const [added, setAdded] = useState(false);
+  const finalPrice =
+    product.discount > 0
+      ? Math.round(product.price * (1 - product.discount / 100))
+      : product.price;
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (added) return;
+    addItem({ productId: product.id, quantity: 1, price: finalPrice });
+    toast.success(`${product.name} added to cart`, { duration: 2500 });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
+  return (
+    <motion.button
+      type="button"
+      onClick={handleAdd}
+      whileTap={{ scale: 0.92 }}
+      animate={added ? { scale: [1, 1.12, 1] } : {}}
+      transition={{ duration: 0.25 }}
+      className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 ${
+        added ? "bg-green-600 text-white" : "text-white"
+      }`}
+      style={added ? {} : { background: "#004a38" }}
+      aria-label={`Add ${product.name} to cart`}
+      data-ocid={`best_sellers.add_button.${product.id}`}
+    >
+      {added ? (
+        <Check className="w-3.5 h-3.5" />
+      ) : (
+        <ShoppingBag className="w-3.5 h-3.5" />
+      )}
+      {added ? "Added" : "Add"}
+    </motion.button>
+  );
+}
+
 // ─── Best Sellers Section ─────────────────────────────────────────────────────
 function BestSellersSection() {
   const { data: featured = [] } = useFeaturedProducts();
@@ -320,9 +362,6 @@ function BestSellersSection() {
       : PRODUCTS_SEED_DATA.filter((p) => p.featured)
   ).slice(0, 8);
 
-  const sellingFastIds = new Set(displayProducts.slice(0, 4).map((p) => p.id));
-  const limitedStockIds = new Set(displayProducts.slice(4, 6).map((p) => p.id));
-
   return (
     <section
       className="py-20 bg-background"
@@ -330,47 +369,89 @@ function BestSellersSection() {
       data-ocid="best_sellers.section"
     >
       <div className="max-w-7xl mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
+        <div className="text-center mb-12">
+          <p
+            className="text-sm font-semibold tracking-widest uppercase mb-3"
+            style={{ color: "#004a38" }}
+          >
             Handpicked for You
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            🔥 Best Sellers
+          <h2
+            className="text-4xl md:text-5xl font-bold mb-3"
+            style={{ color: "#004a38" }}
+          >
+            Best Sellers
           </h2>
-          <div className="w-16 h-1 bg-primary rounded-full mx-auto mb-5" />
-          <p className="text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Our most-loved products — trusted by thousands of happy customers
+          <div
+            className="w-12 h-0.5 mx-auto mb-4"
+            style={{ background: "#004a38" }}
+          />
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Our most loved natural products — trusted by thousands of customers
           </p>
-        </motion.div>
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {displayProducts.map((product, i) => (
-            <ProductCard
+            <motion.div
               key={product.id}
-              product={product}
-              index={i}
-              badge={
-                sellingFastIds.has(product.id)
-                  ? "🔥 Selling Fast"
-                  : limitedStockIds.has(product.id)
-                    ? "⚡ Limited Stock"
-                    : undefined
-              }
-            />
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: i * 0.06 }}
+              className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+              data-ocid={`best_sellers.product.${i + 1}`}
+            >
+              <Link to="/products/$id" params={{ id: String(product.id) }}>
+                <div className="overflow-hidden" style={{ height: "192px" }}>
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "/assets/products/brahmi_forestheals.jpg";
+                    }}
+                  />
+                </div>
+                <div className="p-4">
+                  <h3
+                    className="font-semibold text-sm leading-snug mb-1 line-clamp-2 group-hover:text-primary transition-colors"
+                    style={{ color: "#004a38" }}
+                  >
+                    {product.name}
+                  </h3>
+                  <div className="flex items-center gap-1 mb-3">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span className="text-xs font-medium text-foreground">
+                      {product.ratings.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({product.reviewCount})
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className="font-bold text-base"
+                      style={{ color: "#004a38" }}
+                    >
+                      ₹
+                      {product.discount > 0
+                        ? Math.round(
+                            product.price * (1 - product.discount / 100),
+                          )
+                        : product.price}
+                    </span>
+                    <BestSellerAddButton product={product} />
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
+        <div className="text-center mt-12">
           <Link to="/products">
             <Button
               type="button"
@@ -382,7 +463,7 @@ function BestSellersSection() {
               View All Products
             </Button>
           </Link>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -992,127 +1073,85 @@ const TESTIMONIALS = [
 ];
 
 function TestimonialsSection() {
-  const [current, setCurrent] = useState(0);
-  const total = TESTIMONIALS.length;
-
-  useEffect(() => {
-    const id = setInterval(() => setCurrent((c) => (c + 1) % total), 5000);
-    return () => clearInterval(id);
-  }, [total]);
-
   return (
     <section
-      className="py-20 bg-muted/20"
+      className="py-20"
       id="testimonials"
       data-ocid="testimonials.section"
+      style={{ background: "oklch(0.98 0.02 90)" }}
     >
       <div className="max-w-6xl mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-14"
-        >
-          <p className="text-primary text-sm font-semibold tracking-widest uppercase mb-3">
+        <div className="text-center mb-12">
+          <p
+            className="text-sm font-semibold tracking-widest uppercase mb-3"
+            style={{ color: "#004a38" }}
+          >
             Real Stories
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            ⭐ Real Results, Real People
+          <h2
+            className="text-4xl md:text-5xl font-bold mb-3"
+            style={{ color: "#004a38" }}
+          >
+            What Our Customers Say
           </h2>
-          <div className="w-16 h-1 bg-primary rounded-full mx-auto" />
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {[0, 1, 2].map((offset) => {
-            const idx = (current + offset) % total;
-            const t = TESTIMONIALS[idx];
-            return (
-              <motion.div
-                key={`${current}-${offset}`}
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: offset * 0.08 }}
-                className={`glass-card rounded-3xl p-6 shadow-soft flex flex-col gap-4 ${offset > 0 ? "hidden md:flex" : "flex"}`}
-                data-ocid={`testimonial.card.${offset + 1}`}
-              >
-                <div className="text-4xl text-primary/20 font-serif leading-none select-none">
-                  "
-                </div>
-                <div className="flex gap-0.5">
-                  {Array.from({ length: t.rating }, (_v, si) => (
-                    <span
-                      key={`star-${offset}-${si + 1}`}
-                      className="text-accent text-base"
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
-                <p className="text-foreground leading-relaxed text-sm flex-1 italic">
-                  {t.quote}
-                </p>
-                {/* Outcome badge */}
-                <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full self-start">
-                  ✅ {t.outcome}
-                </span>
-                <div className="flex items-center gap-3 pt-2 border-t border-border">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
-                    {t.name[0]}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-semibold text-foreground text-sm truncate">
-                        {t.name}
-                      </p>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs text-muted-foreground truncate">
-                        {t.role}
-                      </p>
-                      <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium shrink-0">
-                        Verified
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+          <div
+            className="w-12 h-0.5 mx-auto"
+            style={{ background: "#004a38" }}
+          />
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-4 mt-8">
-          <button
-            type="button"
-            onClick={() => setCurrent((c) => (c - 1 + total) % total)}
-            className="w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-smooth"
-            aria-label="Previous testimonial"
-            data-ocid="testimonials.prev_button"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div className="flex gap-2">
-            {TESTIMONIALS.map((t, i) => (
-              <button
-                type="button"
-                key={`dot-${t.name}`}
-                onClick={() => setCurrent(i)}
-                className={`h-2 rounded-full transition-smooth ${i === current ? "bg-primary w-6" : "bg-muted-foreground/30 w-2"}`}
-                aria-label={`Go to testimonial ${i + 1}`}
-                data-ocid={`testimonials.dot.${i + 1}`}
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setCurrent((c) => (c + 1) % total)}
-            className="w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-smooth"
-            aria-label="Next testimonial"
-            data-ocid="testimonials.next_button"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {TESTIMONIALS.map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: i * 0.07 }}
+              className="bg-card rounded-xl p-5 shadow-sm flex flex-col gap-3"
+              data-ocid={`testimonial.card.${i + 1}`}
+            >
+              {/* Stars */}
+              <div className="flex gap-0.5">
+                {Array.from({ length: t.rating }, (_v, si) => (
+                  <span
+                    key={`star-${i}-${si + 1}`}
+                    className="text-amber-400 text-base"
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+              {/* Quote */}
+              <p className="text-foreground text-sm leading-relaxed flex-1">
+                "{t.quote}"
+              </p>
+              {/* Author */}
+              <div className="flex items-center gap-2.5 pt-2 border-t border-border">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                  style={{ background: "#004a38", color: "#f1e0a9" }}
+                >
+                  {t.name[0]}
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className="font-semibold text-sm truncate"
+                    style={{ color: "#004a38" }}
+                  >
+                    {t.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {t.role}
+                  </p>
+                </div>
+                <CheckCircle2
+                  className="w-4 h-4 shrink-0 ml-auto"
+                  style={{ color: "#004a38" }}
+                />
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

@@ -26,4 +26,9 @@ mixin (
   public query ({ caller }) func getWishlist() : async [Nat] {
     WishlistLib.getWishlist(wishlistStore, caller);
   };
+
+  public query ({ caller }) func isWishlisted(productId : Nat) : async Bool {
+    let wishlist = WishlistLib.getWishlist(wishlistStore, caller);
+    wishlist.find(func(id) { id == productId }) != null;
+  };
 };

@@ -14,9 +14,25 @@ mixin (
     CommunityLib.subscribeEmail(emailStore, email);
   };
 
+  /// Alias: subscribeNewsletter
+  public shared func subscribeNewsletter(email : Text, _name : Text) : async Bool {
+    if (email.size() == 0) {
+      Runtime.trap("Email cannot be empty");
+    };
+    CommunityLib.subscribeEmail(emailStore, email);
+  };
+
   public query ({ caller }) func listEmails() : async [Text] {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can list emails");
+    };
+    CommunityLib.listEmails(emailStore);
+  };
+
+  /// Alias: getNewsletterSubscribers
+  public query ({ caller }) func getNewsletterSubscribers() : async [Text] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can list subscribers");
     };
     CommunityLib.listEmails(emailStore);
   };

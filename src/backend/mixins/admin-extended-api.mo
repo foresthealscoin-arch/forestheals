@@ -260,7 +260,7 @@ mixin (
 
   public query func getInventoryItems() : async [AdminTypes.InventoryItem] {
     let pairs = inventoryStore.toArray();
-    pairs.map<(Text, AdminTypes.InventoryItem), AdminTypes.InventoryItem>(func((_, v)) { v });
+    pairs.map(func((_, v) : (Text, AdminTypes.InventoryItem)) : AdminTypes.InventoryItem { v });
   };
 
   public func upsertInventoryItem(item : AdminTypes.InventoryItem) : async AdminTypes.InventoryItem {
@@ -285,21 +285,14 @@ mixin (
 
   public query func getLowStockItems() : async [AdminTypes.InventoryItem] {
     let pairs = inventoryStore.toArray();
-    let all = pairs.map(func((_, v)) { v });
-    all.filter<AdminTypes.InventoryItem>(func(item) {
+    let all = pairs.map(func((_, v) : (Text, AdminTypes.InventoryItem)) : AdminTypes.InventoryItem { v });
+    all.filter(func(item : AdminTypes.InventoryItem) : Bool {
       item.currentStock <= item.lowStockThreshold and item.currentStock > 0
     });
   };
 
-  public query func getOutOfStockItems() : async [AdminTypes.InventoryItem] {
-    let pairs = inventoryStore.toArray();
-    let all = pairs.map(func((_, v)) { v });
-    all.filter<AdminTypes.InventoryItem>(func(item) { item.currentStock == 0 });
-  };
-
-  // ── Extended Analytics ────────────────────────────────────────────────────
-
-  public query func getAnalyticsSummary() : async {
+  /// Alias: getAnalytics (matches contract name)
+  public query func getAnalytics() : async {
     totalRevenue : Nat;
     totalOrders : Nat;
     totalExpenses : Nat;
@@ -326,5 +319,73 @@ mixin (
       avgOrderValue;
       totalCustomers = customerSet.size();
     };
+  };
+
+  /// Alias: updateStoreSettings (matches contract name)
+  public func updateStoreSettings(settings : AdminTypes.StoreSettings) : async AdminTypes.StoreSettings {
+    storeSettingsState.settings := ?settings;
+    settings;
+  };
+
+  /// Alias: updateInventory (matches contract name)
+  public func updateInventory(productId : Text, quantity : Int, _type : Text, _notes : Text) : async ?AdminTypes.InventoryItem {
+    switch (inventoryStore.get(productId)) {
+      case null { null };
+      case (?existing) {
+        let currentInt : Int = existing.currentStock.toInt();
+        let newStockInt = currentInt + quantity;
+        let newStock : Nat = if (newStockInt > 0) { newStockInt.toNat() } else { 0 };
+        let updated = { existing with currentStock = newStock; lastUpdated = Time.now() };
+        inventoryStore.add(productId, updated);
+        ?updated;
+      };
+    };
+  };
+
+  /// getTasks alias
+  public query func getTasks() : async [AdminTypes.AdminTask] {
+    taskStore.toArray();
+  };
+
+  /// createTask alias
+  public func createTask(task : AdminTypes.AdminTask) : async AdminTypes.AdminTask {
+    taskStore.add(task);
+    task;
+  };
+
+  /// updateTask alias
+  public func updateTask(id : Text, task : AdminTypes.AdminTask) : async ?AdminTypes.AdminTask {
+    var updated : ?AdminTypes.AdminTask = null;
+    taskStore.mapInPlace(func(t) {
+      if (t.id == id) {
+        let next = { task with id = id };
+        updated := ?next;
+        next;
+      } else { t };
+    });
+    updated;
+  };
+
+  /// deleteTask alias
+  public func deleteTask(id : Text) : async Bool {
+    let sizeBefore = taskStore.size();
+    let kept = taskStore.filter(func(t) { t.id != id });
+    taskStore.clear();
+    taskStore.append(kept);
+    taskStore.size() < sizeBefore;
+  };
+
+  /// getAllBlogPosts alias (includes drafts)
+  public query func getAllBlogPosts() : async [AdminTypes.BlogPost] {
+    blogPostStore.toArray();
+  };
+
+  /// removeTeamMember alias
+  public func removeTeamMember(id : Text) : async Bool {
+    let sizeBefore = teamMemberStore.size();
+    let kept = teamMemberStore.filter(func(m) { m.id != id });
+    teamMemberStore.clear();
+    teamMemberStore.append(kept);
+    teamMemberStore.size() < sizeBefore;
   };
 };

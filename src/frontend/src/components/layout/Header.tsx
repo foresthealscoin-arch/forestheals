@@ -83,23 +83,18 @@ export function Header() {
       >
         <div className="container max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-20">
-            {/* Logo */}
+            {/* Logo — large, borderless, plain img */}
             <Link
               to="/"
-              className="flex items-center group"
+              className="flex items-center shrink-0"
               data-ocid="header.logo.link"
             >
-              <div className="rounded-xl px-2 py-1 bg-white/15 backdrop-blur-sm group-hover:bg-white/25 transition-smooth">
-                <img
-                  src="/assets/logo.png"
-                  alt="Forestheals"
-                  className="h-12 sm:h-16 w-auto object-contain group-hover:scale-105 transition-smooth"
-                  style={{
-                    minWidth: "160px",
-                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.25))",
-                  }}
-                />
-              </div>
+              <img
+                src="/assets/logo.png"
+                alt="Forestheals"
+                className="h-16 sm:h-20 w-auto object-contain drop-shadow-md"
+                style={{ maxWidth: "220px" }}
+              />
             </Link>
 
             {/* Desktop Nav */}
@@ -292,10 +287,7 @@ export function Header() {
                   <img
                     src="/assets/logo.png"
                     alt="Forestheals"
-                    className="h-10 w-auto object-contain"
-                    style={{
-                      filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.15))",
-                    }}
+                    className="h-12 w-auto object-contain drop-shadow"
                   />
                 </Link>
                 <button

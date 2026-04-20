@@ -19,6 +19,15 @@ export interface AdminTask {
     category: string;
     priority: string;
 }
+export interface Address {
+    tag: string;
+    street: string;
+    country: string;
+    city: string;
+    postalCode: string;
+    state: string;
+    isDefault: boolean;
+}
 export interface TransformationOutput {
     status: bigint;
     body: Uint8Array;
@@ -86,18 +95,9 @@ export interface CouponValidation {
 export interface CreateOrderInput {
     couponCode?: string;
     paymentMethod: PaymentMethod;
-    address: Address;
+    address: Address__1;
     stripePaymentId?: string;
     items: Array<CartItem>;
-}
-export interface B2BInquiryInput {
-    contactName: string;
-    email: string;
-    message: string;
-    productInterest: string;
-    companyName: string;
-    quantity: string;
-    phone: string;
 }
 export type StripeSessionStatus = {
     __kind__: "completed";
@@ -114,6 +114,15 @@ export type StripeSessionStatus = {
 export interface StripeConfiguration {
     allowedCountries: Array<string>;
     secretKey: string;
+}
+export interface B2BInquiryInput {
+    contactName: string;
+    email: string;
+    message: string;
+    productInterest: string;
+    companyName: string;
+    quantity: string;
+    phone: string;
 }
 export type Category = string;
 export interface Review {
@@ -141,6 +150,12 @@ export interface BlogPost {
     metaTitle: string;
     excerpt: string;
 }
+export interface UpdateUserInput {
+    name: string;
+    email: string;
+    addresses: Array<Address>;
+    phone: string;
+}
 export interface Coupon {
     active: boolean;
     expiryDate: bigint;
@@ -158,18 +173,9 @@ export interface Order {
     discountAmount: bigint;
     createdAt: bigint;
     totalAmount: bigint;
-    address: Address;
+    address: Address__1;
     stripePaymentId?: string;
     items: Array<CartItem>;
-}
-export interface ProductFilter {
-    featured?: boolean;
-    minRating?: number;
-    sortBy?: string;
-    maxPrice?: bigint;
-    category?: string;
-    minPrice?: bigint;
-    searchQuery?: string;
 }
 export interface http_header {
     value: string;
@@ -179,6 +185,15 @@ export interface http_request_result {
     status: bigint;
     body: Uint8Array;
     headers: Array<http_header>;
+}
+export interface ProductFilter {
+    featured?: boolean;
+    minRating?: number;
+    sortBy?: string;
+    maxPrice?: bigint;
+    category?: string;
+    minPrice?: bigint;
+    searchQuery?: string;
 }
 export interface CreateProductInput {
     featured: boolean;
@@ -191,6 +206,7 @@ export interface CreateProductInput {
     discount: bigint;
     category: Category;
     price: bigint;
+    bestseller: boolean;
 }
 export interface ShoppingItem {
     productName: string;
@@ -199,17 +215,15 @@ export interface ShoppingItem {
     priceInCents: bigint;
     productDescription: string;
 }
+export interface RegisterUserInput {
+    name: string;
+    email: string;
+    phone: string;
+}
 export interface AdminStats {
     totalProducts: bigint;
     totalOrders: bigint;
     totalRevenue: bigint;
-}
-export interface AdminNotification {
-    id: string;
-    notificationType: string;
-    createdAt: bigint;
-    read: boolean;
-    message: string;
 }
 export interface CreateFlashSaleInput {
     startTime: bigint;
@@ -223,18 +237,12 @@ export interface CreateCouponInput {
     discountPercent: bigint;
     maxUses: bigint;
 }
-export interface AdminCoupon {
+export interface AdminNotification {
     id: string;
-    minCartValue: bigint;
-    active: boolean;
-    discountValue: bigint;
-    expiresAt?: bigint;
-    code: string;
+    notificationType: string;
     createdAt: bigint;
-    discountType: string;
-    usedCount: bigint;
-    description: string;
-    maxUses: bigint;
+    read: boolean;
+    message: string;
 }
 export interface TeamMember {
     id: string;
@@ -258,6 +266,27 @@ export interface FlashSale {
     discountPercent: bigint;
     productId: bigint;
 }
+export interface AdminCoupon {
+    id: string;
+    minCartValue: bigint;
+    active: boolean;
+    discountValue: bigint;
+    expiresAt?: bigint;
+    code: string;
+    createdAt: bigint;
+    discountType: string;
+    usedCount: bigint;
+    description: string;
+    maxUses: bigint;
+}
+export interface Address__1 {
+    street: string;
+    country: string;
+    gstNumber?: string;
+    city: string;
+    postalCode: string;
+    state: string;
+}
 export interface Product {
     id: bigint;
     featured: boolean;
@@ -271,15 +300,16 @@ export interface Product {
     discount: bigint;
     category: Category;
     price: bigint;
+    bestseller: boolean;
     reviewCount: bigint;
 }
-export interface Address {
-    street: string;
-    country: string;
-    gstNumber?: string;
-    city: string;
-    postalCode: string;
-    state: string;
+export interface UserProfile {
+    id: Principal;
+    name: string;
+    createdAt: bigint;
+    email: string;
+    addresses: Array<Address>;
+    phone: string;
 }
 export enum OrderStatus {
     shipped = "shipped",
@@ -305,6 +335,7 @@ export interface backendInterface {
     addToWishlist(productId: bigint): Promise<void>;
     approveReview(reviewId: bigint): Promise<boolean>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    cancelOrder(id: bigint): Promise<boolean>;
     clearAllNotifications(): Promise<void>;
     clearCart(): Promise<void>;
     completeAdminTask(id: string): Promise<boolean>;
@@ -316,12 +347,16 @@ export interface backendInterface {
     createFlashSale(input: CreateFlashSaleInput): Promise<FlashSale>;
     createOrder(input: CreateOrderInput): Promise<Order>;
     createProduct(input: CreateProductInput): Promise<Product>;
+    createReview(input: AddReviewInput): Promise<Review>;
+    createTask(task: AdminTask): Promise<AdminTask>;
+    deactivateFlashSale(id: bigint): Promise<boolean>;
     deleteAdminCoupon(id: string): Promise<boolean>;
     deleteAdminTask(id: string): Promise<boolean>;
     deleteBlogPost(id: string): Promise<boolean>;
+    deleteCoupon(code: string): Promise<boolean>;
     deleteExpense(id: string): Promise<boolean>;
     deleteProduct(id: bigint): Promise<boolean>;
-    deleteReview(reviewId: bigint): Promise<boolean>;
+    deleteTask(id: string): Promise<boolean>;
     deleteTeamMember(id: string): Promise<boolean>;
     endFlashSale(id: bigint): Promise<boolean>;
     getActiveFlashSales(): Promise<Array<FlashSale>>;
@@ -329,7 +364,11 @@ export interface backendInterface {
     getAdminNotifications(): Promise<Array<AdminNotification>>;
     getAdminStats(): Promise<AdminStats>;
     getAdminTasks(): Promise<Array<AdminTask>>;
-    getAnalyticsSummary(): Promise<{
+    getAllBlogPosts(): Promise<Array<BlogPost>>;
+    getAllCustomers(): Promise<Array<UserProfile>>;
+    getAllOrders(): Promise<Array<Order>>;
+    getAllReviews(): Promise<Array<Review>>;
+    getAnalytics(): Promise<{
         totalOrders: bigint;
         totalExpenses: bigint;
         totalRevenue: bigint;
@@ -337,55 +376,72 @@ export interface backendInterface {
         avgOrderValue: bigint;
         netProfit: bigint;
     }>;
+    getB2BInquiries(): Promise<Array<B2BInquiry>>;
     getBlogPosts(): Promise<Array<BlogPost>>;
     getCallerUserRole(): Promise<UserRole>;
     getCart(): Promise<Array<CartItem>>;
+    getCoupons(): Promise<Array<Coupon>>;
     getExpenses(): Promise<Array<AdminExpense>>;
     getExpensesByCategory(): Promise<Array<[string, bigint]>>;
     getInventoryItems(): Promise<Array<InventoryItem>>;
     getLowStockItems(): Promise<Array<InventoryItem>>;
+    getNewsletterSubscribers(): Promise<Array<string>>;
     getOrder(id: bigint): Promise<Order | null>;
-    getOutOfStockItems(): Promise<Array<InventoryItem>>;
     getProduct(id: bigint): Promise<Product | null>;
     getProductReviews(productId: bigint): Promise<Array<Review>>;
+    getProducts(filter: ProductFilter): Promise<Array<Product>>;
     getRecommendations(condition: string): Promise<Array<Product>>;
     getStoreSettings(): Promise<StoreSettings | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
+    getTasks(): Promise<Array<AdminTask>>;
     getTeamMembers(): Promise<Array<TeamMember>>;
+    getUserOrders(): Promise<Array<Order>>;
+    getUserProfile(): Promise<UserProfile | null>;
     getWishlist(): Promise<Array<bigint>>;
     isAdmin(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     isStripeConfigured(): Promise<boolean>;
+    isWishlisted(productId: bigint): Promise<boolean>;
     listAllOrders(): Promise<Array<Order>>;
     listB2BInquiries(): Promise<Array<B2BInquiry>>;
     listBundles(): Promise<Array<Product>>;
-    listCoupons(): Promise<Array<Coupon>>;
     listEmails(): Promise<Array<string>>;
     listFeaturedProducts(): Promise<Array<Product>>;
     listProducts(filter: ProductFilter): Promise<Array<Product>>;
     listUserOrders(): Promise<Array<Order>>;
     markNotificationRead(id: string): Promise<boolean>;
+    placeOrder(input: CreateOrderInput): Promise<Order>;
     publishBlogPost(id: string): Promise<boolean>;
     redeemCoupon(code: string): Promise<boolean>;
+    registerUser(input: RegisterUserInput): Promise<UserProfile>;
+    rejectReview(reviewId: bigint): Promise<boolean>;
     removeFromCart(productId: bigint): Promise<void>;
     removeFromWishlist(productId: bigint): Promise<void>;
+    removeTeamMember(id: string): Promise<boolean>;
     saveStoreSettings(settings: StoreSettings): Promise<StoreSettings>;
     seedProducts(): Promise<void>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     setUserRole(user: Principal, role: UserRole): Promise<void>;
     submitB2BInquiry(input: B2BInquiryInput): Promise<B2BInquiry>;
     subscribeEmail(email: string): Promise<boolean>;
+    subscribeNewsletter(email: string, _name: string): Promise<boolean>;
+    toggleBestseller(id: bigint): Promise<boolean>;
     toggleCouponActive(id: string): Promise<boolean>;
+    toggleFeatured(id: bigint): Promise<boolean>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
     updateAdminCoupon(id: string, coupon: AdminCoupon): Promise<AdminCoupon | null>;
     updateAdminTask(id: string, task: AdminTask): Promise<AdminTask | null>;
     updateBlogPost(id: string, post: BlogPost): Promise<BlogPost | null>;
     updateCartQuantity(productId: bigint, quantity: bigint): Promise<void>;
     updateExpense(id: string, expense: AdminExpense): Promise<AdminExpense | null>;
+    updateInventory(productId: string, quantity: bigint, _type: string, _notes: string): Promise<InventoryItem | null>;
     updateInventoryStock(productId: string, delta: bigint, _reason: string): Promise<InventoryItem | null>;
     updateOrderStatus(id: bigint, status: OrderStatus): Promise<boolean>;
     updateProduct(id: bigint, input: CreateProductInput): Promise<boolean>;
+    updateStoreSettings(settings: StoreSettings): Promise<StoreSettings>;
+    updateTask(id: string, task: AdminTask): Promise<AdminTask | null>;
     updateTeamMember(id: string, member: TeamMember): Promise<TeamMember | null>;
+    updateUserProfile(input: UpdateUserInput): Promise<UserProfile | null>;
     upsertInventoryItem(item: InventoryItem): Promise<InventoryItem>;
     validateCoupon(code: string): Promise<CouponValidation>;
     verifyAdminCredentials(username: string, password: string): Promise<boolean>;

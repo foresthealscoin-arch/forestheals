@@ -27,7 +27,16 @@ mixin (
     CouponLib.createCoupon(couponStore, input);
   };
 
-  public query ({ caller }) func listCoupons() : async [CouponTypes.Coupon] {
+  public shared ({ caller }) func deleteCoupon(code : Text) : async Bool {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can delete coupons");
+    };
+    let sizeBefore = couponStore.size();
+    couponStore.remove(code);
+    couponStore.size() < sizeBefore;
+  };
+
+  public query ({ caller }) func getCoupons() : async [CouponTypes.Coupon] {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can list coupons");
     };

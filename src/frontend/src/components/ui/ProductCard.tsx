@@ -53,15 +53,17 @@ export function ProductCard({
       <Link to="/products/$id" params={{ id: String(product.id) }}>
         <div className="glass-card rounded-2xl overflow-hidden shadow-soft hover:shadow-elevated transition-smooth hover:-translate-y-1">
           {/* Image */}
-          <div className="relative overflow-hidden bg-muted aspect-square">
+          <div
+            className="relative overflow-hidden bg-muted"
+            style={{ height: "192px" }}
+          >
             <img
               src={product.imageUrl}
               alt={product.name}
               loading="lazy"
               className="w-full h-full object-cover group-hover:scale-105 transition-smooth duration-500"
               onError={(e) => {
-                e.currentTarget.src =
-                  "https://images.unsplash.com/photo-1616391182219-e080b4d1043a?w=400&q=80";
+                e.currentTarget.src = "/assets/products/brahmi_forestheals.jpg";
               }}
             />
             {/* Badges */}

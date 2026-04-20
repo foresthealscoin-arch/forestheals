@@ -15,6 +15,22 @@ type UserRole =
    guest;
    user;
  };
+type UserProfile = 
+ record {
+   addresses: vec Address;
+   createdAt: int;
+   email: text;
+   id: principal;
+   name: text;
+   phone: text;
+ };
+type UpdateUserInput = 
+ record {
+   addresses: vec Address;
+   email: text;
+   name: text;
+   phone: text;
+ };
 type TransformationOutput = 
  record {
    body: blob;
@@ -81,6 +97,12 @@ type Review =
    userId: principal;
    verified: bool;
  };
+type RegisterUserInput = 
+ record {
+   email: text;
+   name: text;
+   phone: text;
+ };
 type ProductFilter = 
  record {
    category: opt text;
@@ -93,6 +115,7 @@ type ProductFilter =
  };
 type Product = 
  record {
+   bestseller: bool;
    bundleIds: vec nat;
    category: Category;
    description: text;
@@ -122,7 +145,7 @@ type OrderStatus =
  };
 type Order = 
  record {
-   address: Address;
+   address: Address__1;
    couponCode: opt text;
    createdAt: int;
    discountAmount: nat;
@@ -160,6 +183,7 @@ type FlashSale =
  };
 type CreateProductInput = 
  record {
+   bestseller: bool;
    bundleIds: vec nat;
    category: Category;
    description: text;
@@ -173,7 +197,7 @@ type CreateProductInput =
  };
 type CreateOrderInput = 
  record {
-   address: Address;
+   address: Address__1;
    couponCode: opt text;
    items: vec CartItem;
    paymentMethod: PaymentMethod;
@@ -303,7 +327,7 @@ type AdminCoupon =
    minCartValue: nat;
    usedCount: nat;
  };
-type Address = 
+type Address__1 = 
  record {
    city: text;
    country: text;
@@ -311,6 +335,16 @@ type Address =
    postalCode: text;
    state: text;
    street: text;
+ };
+type Address = 
+ record {
+   city: text;
+   country: text;
+   isDefault: bool;
+   postalCode: text;
+   state: text;
+   street: text;
+   tag: text;
  };
 type AddReviewInput = 
  record {
@@ -327,6 +361,7 @@ service : {
   addToWishlist: (productId: nat) -> ();
   approveReview: (reviewId: nat) -> (bool);
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  cancelOrder: (id: nat) -> (bool);
   clearAllNotifications: () -> ();
   clearCart: () -> ();
   completeAdminTask: (id: text) -> (bool);
@@ -339,12 +374,16 @@ service : {
   createFlashSale: (input: CreateFlashSaleInput) -> (FlashSale);
   createOrder: (input: CreateOrderInput) -> (Order);
   createProduct: (input: CreateProductInput) -> (Product);
+  createReview: (input: AddReviewInput) -> (Review);
+  createTask: (task: AdminTask) -> (AdminTask);
+  deactivateFlashSale: (id: nat) -> (bool);
   deleteAdminCoupon: (id: text) -> (bool);
   deleteAdminTask: (id: text) -> (bool);
   deleteBlogPost: (id: text) -> (bool);
+  deleteCoupon: (code: text) -> (bool);
   deleteExpense: (id: text) -> (bool);
   deleteProduct: (id: nat) -> (bool);
-  deleteReview: (reviewId: nat) -> (bool);
+  deleteTask: (id: text) -> (bool);
   deleteTeamMember: (id: text) -> (bool);
   endFlashSale: (id: nat) -> (bool);
   getActiveFlashSales: () -> (vec FlashSale) query;
@@ -352,7 +391,11 @@ service : {
   getAdminNotifications: () -> (vec AdminNotification) query;
   getAdminStats: () -> (AdminStats) query;
   getAdminTasks: () -> (vec AdminTask) query;
-  getAnalyticsSummary: () ->
+  getAllBlogPosts: () -> (vec BlogPost) query;
+  getAllCustomers: () -> (vec UserProfile) query;
+  getAllOrders: () -> (vec Order) query;
+  getAllReviews: () -> (vec Review) query;
+  getAnalytics: () ->
    (record {
       avgOrderValue: nat;
       netProfit: int;
@@ -361,9 +404,11 @@ service : {
       totalOrders: nat;
       totalRevenue: nat;
     }) query;
+  getB2BInquiries: () -> (vec B2BInquiry) query;
   getBlogPosts: () -> (vec BlogPost) query;
   getCallerUserRole: () -> (UserRole) query;
   getCart: () -> (vec CartItem) query;
+  getCoupons: () -> (vec Coupon) query;
   getExpenses: () -> (vec AdminExpense) query;
   getExpensesByCategory: () -> (vec record {
                                       text;
@@ -371,49 +416,65 @@ service : {
                                     }) query;
   getInventoryItems: () -> (vec InventoryItem) query;
   getLowStockItems: () -> (vec InventoryItem) query;
+  getNewsletterSubscribers: () -> (vec text) query;
   getOrder: (id: nat) -> (opt Order) query;
-  getOutOfStockItems: () -> (vec InventoryItem) query;
   getProduct: (id: nat) -> (opt Product) query;
   getProductReviews: (productId: nat) -> (vec Review) query;
+  getProducts: (filter: ProductFilter) -> (vec Product) query;
   getRecommendations: (condition: text) -> (vec Product) query;
   getStoreSettings: () -> (opt StoreSettings) query;
   getStripeSessionStatus: (sessionId: text) -> (StripeSessionStatus);
+  getTasks: () -> (vec AdminTask) query;
   getTeamMembers: () -> (vec TeamMember) query;
+  getUserOrders: () -> (vec Order) query;
+  getUserProfile: () -> (opt UserProfile) query;
   getWishlist: () -> (vec nat) query;
   isAdmin: () -> (bool) query;
   isCallerAdmin: () -> (bool) query;
   isStripeConfigured: () -> (bool) query;
+  isWishlisted: (productId: nat) -> (bool) query;
   listAllOrders: () -> (vec Order) query;
   listB2BInquiries: () -> (vec B2BInquiry) query;
   listBundles: () -> (vec Product) query;
-  listCoupons: () -> (vec Coupon) query;
   listEmails: () -> (vec text) query;
   listFeaturedProducts: () -> (vec Product) query;
   listProducts: (filter: ProductFilter) -> (vec Product) query;
   listUserOrders: () -> (vec Order) query;
   markNotificationRead: (id: text) -> (bool);
+  placeOrder: (input: CreateOrderInput) -> (Order);
   publishBlogPost: (id: text) -> (bool);
   redeemCoupon: (code: text) -> (bool);
+  registerUser: (input: RegisterUserInput) -> (UserProfile);
+  rejectReview: (reviewId: nat) -> (bool);
   removeFromCart: (productId: nat) -> ();
   removeFromWishlist: (productId: nat) -> ();
+  removeTeamMember: (id: text) -> (bool);
   saveStoreSettings: (settings: StoreSettings) -> (StoreSettings);
   seedProducts: () -> ();
   setStripeConfiguration: (config: StripeConfiguration) -> ();
   setUserRole: (user: principal, role: UserRole) -> ();
   submitB2BInquiry: (input: B2BInquiryInput) -> (B2BInquiry);
   subscribeEmail: (email: text) -> (bool);
+  subscribeNewsletter: (email: text, _name: text) -> (bool);
+  toggleBestseller: (id: nat) -> (bool);
   toggleCouponActive: (id: text) -> (bool);
+  toggleFeatured: (id: nat) -> (bool);
   transform: (input: TransformationInput) -> (TransformationOutput) query;
   updateAdminCoupon: (id: text, coupon: AdminCoupon) -> (opt AdminCoupon);
   updateAdminTask: (id: text, task: AdminTask) -> (opt AdminTask);
   updateBlogPost: (id: text, post: BlogPost) -> (opt BlogPost);
   updateCartQuantity: (productId: nat, quantity: nat) -> ();
   updateExpense: (id: text, expense: AdminExpense) -> (opt AdminExpense);
+  updateInventory: (productId: text, quantity: int, _type: text, _notes:
+   text) -> (opt InventoryItem);
   updateInventoryStock: (productId: text, delta: int, _reason: text) ->
    (opt InventoryItem);
   updateOrderStatus: (id: nat, status: OrderStatus) -> (bool);
   updateProduct: (id: nat, input: CreateProductInput) -> (bool);
+  updateStoreSettings: (settings: StoreSettings) -> (StoreSettings);
+  updateTask: (id: text, task: AdminTask) -> (opt AdminTask);
   updateTeamMember: (id: text, member: TeamMember) -> (opt TeamMember);
+  updateUserProfile: (input: UpdateUserInput) -> (opt UserProfile);
   upsertInventoryItem: (item: InventoryItem) -> (InventoryItem);
   validateCoupon: (code: text) -> (CouponValidation) query;
   verifyAdminCredentials: (username: text, password: text) -> (bool);

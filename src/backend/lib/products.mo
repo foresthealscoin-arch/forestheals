@@ -1,6 +1,5 @@
 import List "mo:core/List";
 import Map "mo:core/Map";
-import Time "mo:core/Time";
 import Types "../types/products";
 import CommonTypes "../types/common";
 
@@ -25,6 +24,7 @@ module {
       ratings = 0.0;
       reviewCount = 0;
       featured = input.featured;
+      bestseller = input.bestseller;
       discount = input.discount;
       bundleIds = input.bundleIds;
     };
@@ -51,6 +51,7 @@ module {
           imageKey = input.imageKey;
           stock = input.stock;
           featured = input.featured;
+          bestseller = input.bestseller;
           discount = input.discount;
           bundleIds = input.bundleIds;
         };
@@ -149,10 +150,49 @@ module {
     store.filter(func(p) { p.bundleIds.size() > 0 }).toArray();
   };
 
+  public func toggleFeatured(store : ProductStore, id : Nat) : Bool {
+    var found = false;
+    store.mapInPlace(func(p) {
+      if (p.id == id) {
+        found := true;
+        { p with featured = not p.featured };
+      } else { p };
+    });
+    found;
+  };
+
+  public func toggleBestseller(store : ProductStore, id : Nat) : Bool {
+    var found = false;
+    store.mapInPlace(func(p) {
+      if (p.id == id) {
+        found := true;
+        { p with bestseller = not p.bestseller };
+      } else { p };
+    });
+    found;
+  };
+
   public func updateRating(store : ProductStore, productId : Nat, newRating : Float, newCount : Nat) : () {
     store.mapInPlace(func(p) {
       if (p.id == productId) {
         { p with ratings = newRating; reviewCount = newCount };
+      } else { p };
+    });
+  };
+
+  public func decreaseStock(store : ProductStore, productId : Nat, qty : Nat) : () {
+    store.mapInPlace(func(p) {
+      if (p.id == productId) {
+        let newStock = if (p.stock >= qty) { p.stock - qty } else { 0 };
+        { p with stock = newStock };
+      } else { p };
+    });
+  };
+
+  public func increaseStock(store : ProductStore, productId : Nat, qty : Nat) : () {
+    store.mapInPlace(func(p) {
+      if (p.id == productId) {
+        { p with stock = p.stock + qty };
       } else { p };
     });
   };
@@ -197,6 +237,7 @@ module {
         ratings = 0.0;
         reviewCount = 0;
         featured = featured;
+        bestseller = false;
         discount = 0;
         bundleIds = bundles;
       };

@@ -132,6 +132,15 @@ export interface APInventoryItem {
   expiryDate: string;
 }
 
+export interface APAnalytics {
+  totalRevenue: number;
+  totalOrders: number;
+  totalCustomers: number;
+  averageOrderValue: number;
+  netProfit: number;
+  totalExpenses: number;
+}
+
 interface AdminPStore {
   isLoggedIn: boolean;
   products: Product[];
@@ -144,6 +153,7 @@ interface AdminPStore {
   reviews: APReview[];
   blogPosts: APBlogPost[];
   inventory: APInventoryItem[];
+  analytics: APAnalytics | null;
   settings: {
     storeName: string;
     contactEmail: string;
@@ -181,7 +191,17 @@ interface AdminPStore {
   updateBlogPost: (p: APBlogPost) => void;
   deleteBlogPost: (id: string) => void;
   updateInventoryItem: (item: APInventoryItem) => void;
+  setInventory: (items: APInventoryItem[]) => void;
   updateSettings: (s: Partial<AdminPStore["settings"]>) => void;
+  setAnalytics: (a: APAnalytics) => void;
+  setOrders: (orders: APOrder[]) => void;
+  setCustomers: (customers: APCustomer[]) => void;
+  setReviews: (reviews: APReview[]) => void;
+  setBlogPosts: (posts: APBlogPost[]) => void;
+  setTeam: (members: APTeamMember[]) => void;
+  setTasks: (tasks: APTask[]) => void;
+  setCoupons: (coupons: APCoupon[]) => void;
+  setExpenses: (expenses: APExpense[]) => void;
 }
 
 const SEED_ORDERS: APOrder[] = [
@@ -564,6 +584,7 @@ export const useAdminPStore = create<AdminPStore>()(
       reviews: SEED_REVIEWS,
       blogPosts: SEED_BLOG,
       inventory: SEED_INVENTORY,
+      analytics: null,
       settings: {
         storeName: "Forestheals",
         contactEmail: "hello@forestheals.in",
@@ -585,6 +606,7 @@ export const useAdminPStore = create<AdminPStore>()(
       addOrder: (o) => set((s) => ({ orders: [o, ...s.orders] })),
       updateOrder: (o) =>
         set((s) => ({ orders: s.orders.map((x) => (x.id === o.id ? o : x)) })),
+      setOrders: (orders) => set({ orders }),
       addCustomer: (c) => set((s) => ({ customers: [...s.customers, c] })),
       updateCustomer: (c) =>
         set((s) => ({
@@ -592,6 +614,7 @@ export const useAdminPStore = create<AdminPStore>()(
         })),
       deleteCustomer: (id) =>
         set((s) => ({ customers: s.customers.filter((x) => x.id !== id) })),
+      setCustomers: (customers) => set({ customers }),
       addExpense: (e) => set((s) => ({ expenses: [...s.expenses, e] })),
       updateExpense: (e) =>
         set((s) => ({
@@ -599,6 +622,7 @@ export const useAdminPStore = create<AdminPStore>()(
         })),
       deleteExpense: (id) =>
         set((s) => ({ expenses: s.expenses.filter((x) => x.id !== id) })),
+      setExpenses: (expenses) => set({ expenses }),
       addCoupon: (c) => set((s) => ({ coupons: [...s.coupons, c] })),
       updateCoupon: (c) =>
         set((s) => ({
@@ -606,21 +630,25 @@ export const useAdminPStore = create<AdminPStore>()(
         })),
       deleteCoupon: (id) =>
         set((s) => ({ coupons: s.coupons.filter((x) => x.id !== id) })),
+      setCoupons: (coupons) => set({ coupons }),
       addTask: (t) => set((s) => ({ tasks: [...s.tasks, t] })),
       updateTask: (t) =>
         set((s) => ({ tasks: s.tasks.map((x) => (x.id === t.id ? t : x)) })),
       deleteTask: (id) =>
         set((s) => ({ tasks: s.tasks.filter((x) => x.id !== id) })),
+      setTasks: (tasks) => set({ tasks }),
       addTeamMember: (m) => set((s) => ({ team: [...s.team, m] })),
       updateTeamMember: (m) =>
         set((s) => ({ team: s.team.map((x) => (x.id === m.id ? m : x)) })),
       deleteTeamMember: (id) =>
         set((s) => ({ team: s.team.filter((x) => x.id !== id) })),
+      setTeam: (team) => set({ team }),
       addReview: (r) => set((s) => ({ reviews: [...s.reviews, r] })),
       updateReview: (r) =>
         set((s) => ({
           reviews: s.reviews.map((x) => (x.id === r.id ? r : x)),
         })),
+      setReviews: (reviews) => set({ reviews }),
       addBlogPost: (p) => set((s) => ({ blogPosts: [...s.blogPosts, p] })),
       updateBlogPost: (p) =>
         set((s) => ({
@@ -628,12 +656,15 @@ export const useAdminPStore = create<AdminPStore>()(
         })),
       deleteBlogPost: (id) =>
         set((s) => ({ blogPosts: s.blogPosts.filter((x) => x.id !== id) })),
+      setBlogPosts: (blogPosts) => set({ blogPosts }),
       updateInventoryItem: (item) =>
         set((s) => ({
           inventory: s.inventory.map((x) => (x.id === item.id ? item : x)),
         })),
+      setInventory: (inventory) => set({ inventory }),
       updateSettings: (s) =>
         set((prev) => ({ settings: { ...prev.settings, ...s } })),
+      setAnalytics: (analytics) => set({ analytics }),
     }),
     { name: "forestheals-adminp" },
   ),

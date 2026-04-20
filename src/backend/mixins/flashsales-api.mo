@@ -29,4 +29,12 @@ mixin (
     };
     FlashSaleLib.endFlashSale(flashSaleStore, id);
   };
+
+  /// Alias: deactivateFlashSale
+  public shared ({ caller }) func deactivateFlashSale(id : Nat) : async Bool {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can deactivate flash sales");
+    };
+    FlashSaleLib.endFlashSale(flashSaleStore, id);
+  };
 };

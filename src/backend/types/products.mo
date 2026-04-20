@@ -13,6 +13,7 @@ module {
     ratings : Float;
     reviewCount : Nat;
     featured : Bool;
+    bestseller : Bool;
     discount : Nat; // percentage 0-100
     bundleIds : [Nat];
   };
@@ -36,6 +37,7 @@ module {
     imageKey : Text;
     stock : Nat;
     featured : Bool;
+    bestseller : Bool;
     discount : Nat;
     bundleIds : [Nat];
   };

@@ -16,6 +16,15 @@ export interface AddReviewInput {
   'rating' : bigint,
 }
 export interface Address {
+  'tag' : string,
+  'street' : string,
+  'country' : string,
+  'city' : string,
+  'postalCode' : string,
+  'state' : string,
+  'isDefault' : boolean,
+}
+export interface Address__1 {
   'street' : string,
   'country' : string,
   'gstNumber' : [] | [string],
@@ -137,7 +146,7 @@ export interface CreateFlashSaleInput {
 export interface CreateOrderInput {
   'couponCode' : [] | [string],
   'paymentMethod' : PaymentMethod,
-  'address' : Address,
+  'address' : Address__1,
   'stripePaymentId' : [] | [string],
   'items' : Array<CartItem>,
 }
@@ -152,6 +161,7 @@ export interface CreateProductInput {
   'discount' : bigint,
   'category' : Category,
   'price' : bigint,
+  'bestseller' : boolean,
 }
 export interface FlashSale {
   'id' : bigint,
@@ -184,7 +194,7 @@ export interface Order {
   'discountAmount' : bigint,
   'createdAt' : bigint,
   'totalAmount' : bigint,
-  'address' : Address,
+  'address' : Address__1,
   'stripePaymentId' : [] | [string],
   'items' : Array<CartItem>,
 }
@@ -208,6 +218,7 @@ export interface Product {
   'discount' : bigint,
   'category' : Category,
   'price' : bigint,
+  'bestseller' : boolean,
   'reviewCount' : bigint,
 }
 export interface ProductFilter {
@@ -218,6 +229,11 @@ export interface ProductFilter {
   'category' : [] | [string],
   'minPrice' : [] | [bigint],
   'searchQuery' : [] | [string],
+}
+export interface RegisterUserInput {
+  'name' : string,
+  'email' : string,
+  'phone' : string,
 }
 export interface Review {
   'id' : bigint,
@@ -274,6 +290,20 @@ export interface TransformationOutput {
   'body' : Uint8Array,
   'headers' : Array<http_header>,
 }
+export interface UpdateUserInput {
+  'name' : string,
+  'email' : string,
+  'addresses' : Array<Address>,
+  'phone' : string,
+}
+export interface UserProfile {
+  'id' : Principal,
+  'name' : string,
+  'createdAt' : bigint,
+  'email' : string,
+  'addresses' : Array<Address>,
+  'phone' : string,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
@@ -292,6 +322,7 @@ export interface _SERVICE {
   'addToWishlist' : ActorMethod<[bigint], undefined>,
   'approveReview' : ActorMethod<[bigint], boolean>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'cancelOrder' : ActorMethod<[bigint], boolean>,
   'clearAllNotifications' : ActorMethod<[], undefined>,
   'clearCart' : ActorMethod<[], undefined>,
   'completeAdminTask' : ActorMethod<[string], boolean>,
@@ -306,12 +337,16 @@ export interface _SERVICE {
   'createFlashSale' : ActorMethod<[CreateFlashSaleInput], FlashSale>,
   'createOrder' : ActorMethod<[CreateOrderInput], Order>,
   'createProduct' : ActorMethod<[CreateProductInput], Product>,
+  'createReview' : ActorMethod<[AddReviewInput], Review>,
+  'createTask' : ActorMethod<[AdminTask], AdminTask>,
+  'deactivateFlashSale' : ActorMethod<[bigint], boolean>,
   'deleteAdminCoupon' : ActorMethod<[string], boolean>,
   'deleteAdminTask' : ActorMethod<[string], boolean>,
   'deleteBlogPost' : ActorMethod<[string], boolean>,
+  'deleteCoupon' : ActorMethod<[string], boolean>,
   'deleteExpense' : ActorMethod<[string], boolean>,
   'deleteProduct' : ActorMethod<[bigint], boolean>,
-  'deleteReview' : ActorMethod<[bigint], boolean>,
+  'deleteTask' : ActorMethod<[string], boolean>,
   'deleteTeamMember' : ActorMethod<[string], boolean>,
   'endFlashSale' : ActorMethod<[bigint], boolean>,
   'getActiveFlashSales' : ActorMethod<[], Array<FlashSale>>,
@@ -319,7 +354,11 @@ export interface _SERVICE {
   'getAdminNotifications' : ActorMethod<[], Array<AdminNotification>>,
   'getAdminStats' : ActorMethod<[], AdminStats>,
   'getAdminTasks' : ActorMethod<[], Array<AdminTask>>,
-  'getAnalyticsSummary' : ActorMethod<
+  'getAllBlogPosts' : ActorMethod<[], Array<BlogPost>>,
+  'getAllCustomers' : ActorMethod<[], Array<UserProfile>>,
+  'getAllOrders' : ActorMethod<[], Array<Order>>,
+  'getAllReviews' : ActorMethod<[], Array<Review>>,
+  'getAnalytics' : ActorMethod<
     [],
     {
       'totalOrders' : bigint,
@@ -330,58 +369,78 @@ export interface _SERVICE {
       'netProfit' : bigint,
     }
   >,
+  'getB2BInquiries' : ActorMethod<[], Array<B2BInquiry>>,
   'getBlogPosts' : ActorMethod<[], Array<BlogPost>>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCart' : ActorMethod<[], Array<CartItem>>,
+  'getCoupons' : ActorMethod<[], Array<Coupon>>,
   'getExpenses' : ActorMethod<[], Array<AdminExpense>>,
   'getExpensesByCategory' : ActorMethod<[], Array<[string, bigint]>>,
   'getInventoryItems' : ActorMethod<[], Array<InventoryItem>>,
   'getLowStockItems' : ActorMethod<[], Array<InventoryItem>>,
+  'getNewsletterSubscribers' : ActorMethod<[], Array<string>>,
   'getOrder' : ActorMethod<[bigint], [] | [Order]>,
-  'getOutOfStockItems' : ActorMethod<[], Array<InventoryItem>>,
   'getProduct' : ActorMethod<[bigint], [] | [Product]>,
   'getProductReviews' : ActorMethod<[bigint], Array<Review>>,
+  'getProducts' : ActorMethod<[ProductFilter], Array<Product>>,
   'getRecommendations' : ActorMethod<[string], Array<Product>>,
   'getStoreSettings' : ActorMethod<[], [] | [StoreSettings]>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
+  'getTasks' : ActorMethod<[], Array<AdminTask>>,
   'getTeamMembers' : ActorMethod<[], Array<TeamMember>>,
+  'getUserOrders' : ActorMethod<[], Array<Order>>,
+  'getUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getWishlist' : ActorMethod<[], Array<bigint>>,
   'isAdmin' : ActorMethod<[], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isStripeConfigured' : ActorMethod<[], boolean>,
+  'isWishlisted' : ActorMethod<[bigint], boolean>,
   'listAllOrders' : ActorMethod<[], Array<Order>>,
   'listB2BInquiries' : ActorMethod<[], Array<B2BInquiry>>,
   'listBundles' : ActorMethod<[], Array<Product>>,
-  'listCoupons' : ActorMethod<[], Array<Coupon>>,
   'listEmails' : ActorMethod<[], Array<string>>,
   'listFeaturedProducts' : ActorMethod<[], Array<Product>>,
   'listProducts' : ActorMethod<[ProductFilter], Array<Product>>,
   'listUserOrders' : ActorMethod<[], Array<Order>>,
   'markNotificationRead' : ActorMethod<[string], boolean>,
+  'placeOrder' : ActorMethod<[CreateOrderInput], Order>,
   'publishBlogPost' : ActorMethod<[string], boolean>,
   'redeemCoupon' : ActorMethod<[string], boolean>,
+  'registerUser' : ActorMethod<[RegisterUserInput], UserProfile>,
+  'rejectReview' : ActorMethod<[bigint], boolean>,
   'removeFromCart' : ActorMethod<[bigint], undefined>,
   'removeFromWishlist' : ActorMethod<[bigint], undefined>,
+  'removeTeamMember' : ActorMethod<[string], boolean>,
   'saveStoreSettings' : ActorMethod<[StoreSettings], StoreSettings>,
   'seedProducts' : ActorMethod<[], undefined>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'setUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'submitB2BInquiry' : ActorMethod<[B2BInquiryInput], B2BInquiry>,
   'subscribeEmail' : ActorMethod<[string], boolean>,
+  'subscribeNewsletter' : ActorMethod<[string, string], boolean>,
+  'toggleBestseller' : ActorMethod<[bigint], boolean>,
   'toggleCouponActive' : ActorMethod<[string], boolean>,
+  'toggleFeatured' : ActorMethod<[bigint], boolean>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
   'updateAdminCoupon' : ActorMethod<[string, AdminCoupon], [] | [AdminCoupon]>,
   'updateAdminTask' : ActorMethod<[string, AdminTask], [] | [AdminTask]>,
   'updateBlogPost' : ActorMethod<[string, BlogPost], [] | [BlogPost]>,
   'updateCartQuantity' : ActorMethod<[bigint, bigint], undefined>,
   'updateExpense' : ActorMethod<[string, AdminExpense], [] | [AdminExpense]>,
+  'updateInventory' : ActorMethod<
+    [string, bigint, string, string],
+    [] | [InventoryItem]
+  >,
   'updateInventoryStock' : ActorMethod<
     [string, bigint, string],
     [] | [InventoryItem]
   >,
   'updateOrderStatus' : ActorMethod<[bigint, OrderStatus], boolean>,
   'updateProduct' : ActorMethod<[bigint, CreateProductInput], boolean>,
+  'updateStoreSettings' : ActorMethod<[StoreSettings], StoreSettings>,
+  'updateTask' : ActorMethod<[string, AdminTask], [] | [AdminTask]>,
   'updateTeamMember' : ActorMethod<[string, TeamMember], [] | [TeamMember]>,
+  'updateUserProfile' : ActorMethod<[UpdateUserInput], [] | [UserProfile]>,
   'upsertInventoryItem' : ActorMethod<[InventoryItem], InventoryItem>,
   'validateCoupon' : ActorMethod<[string], CouponValidation>,
   'verifyAdminCredentials' : ActorMethod<[string, string], boolean>,

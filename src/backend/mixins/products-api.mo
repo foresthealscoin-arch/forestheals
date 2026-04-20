@@ -48,6 +48,24 @@ mixin (
     ProductLib.listBundles(productStore);
   };
 
+  public shared ({ caller }) func toggleFeatured(id : Nat) : async Bool {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can toggle featured");
+    };
+    ProductLib.toggleFeatured(productStore, id);
+  };
+
+  public shared ({ caller }) func toggleBestseller(id : Nat) : async Bool {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can toggle bestseller");
+    };
+    ProductLib.toggleBestseller(productStore, id);
+  };
+
+  public query func getProducts(filter : ProductTypes.ProductFilter) : async [ProductTypes.Product] {
+    ProductLib.listProducts(productStore, filter);
+  };
+
   public shared ({ caller }) func seedProducts() : async () {
     ProductLib.seedProducts(productStore);
     nextProductId.value := productStore.size() + 1;

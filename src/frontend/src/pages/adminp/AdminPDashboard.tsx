@@ -1,9 +1,11 @@
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   BarChart3,
   CheckCircle2,
   Clock,
   DollarSign,
   Package,
+  RefreshCw,
   ShoppingCart,
   Tag,
   TrendingUp,
@@ -11,6 +13,8 @@ import {
   Warehouse,
   XCircle,
 } from "lucide-react";
+import { useEffect } from "react";
+import { createActor } from "../../backend";
 import { APKpiCard, AdminPLayout } from "./AdminPLayout";
 import { useAdminPStore } from "./adminpStore";
 
@@ -20,21 +24,89 @@ export default function AdminPDashboard() {
   const customers = useAdminPStore((s) => s.customers);
   const expenses = useAdminPStore((s) => s.expenses);
   const tasks = useAdminPStore((s) => s.tasks);
+  const analytics = useAdminPStore((s) => s.analytics);
+  const setAnalytics = useAdminPStore((s) => s.setAnalytics);
+  const setOrders = useAdminPStore((s) => s.setOrders);
 
-  const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const netProfit = totalRevenue - totalExpenses;
+  const { actor, isFetching } = useActor(createActor);
+
+  // Fetch analytics from backend on mount and every 30s
+  useEffect(() => {
+    if (!actor || isFetching) return;
+
+    const fetchData = async () => {
+      try {
+        const stats = await actor.getAnalyticsSummary();
+        setAnalytics({
+          totalRevenue: Number(stats.totalRevenue),
+          totalOrders: Number(stats.totalOrders),
+          totalCustomers: Number(stats.totalCustomers),
+          averageOrderValue: Number(stats.avgOrderValue),
+          netProfit: Number(stats.netProfit),
+          totalExpenses: Number(stats.totalExpenses),
+        });
+      } catch {
+        // use local calculations as fallback
+      }
+
+      try {
+        const allOrders = await actor.listAllOrders();
+        const mapped = allOrders.map((o) => ({
+          id: `ORD-${String(o.id)}`,
+          customer: `${o.userId.toText().slice(0, 12)}…`,
+          email: "",
+          phone: "",
+          address: o.address.street,
+          city: o.address.city,
+          state: o.address.state,
+          pincode: o.address.postalCode,
+          products: o.items.map((i) => ({
+            name: `Product #${String(i.productId)}`,
+            qty: Number(i.quantity),
+            price: Number(i.price),
+          })),
+          total: Number(o.totalAmount),
+          paymentMethod: (String(o.paymentMethod) === "cod"
+            ? "COD"
+            : "Online") as "COD" | "Online",
+          paymentStatus: "Paid" as const,
+          status: mapOrderStatus(String(o.status)),
+          trackingId: "",
+          notes: "",
+          createdAt: new Date(Number(o.createdAt) / 1_000_000)
+            .toISOString()
+            .split("T")[0],
+        }));
+        if (mapped.length > 0) setOrders(mapped);
+      } catch {
+        // keep local orders
+      }
+    };
+
+    void fetchData();
+    const interval = setInterval(() => void fetchData(), 30_000);
+    return () => clearInterval(interval);
+  }, [actor, isFetching, setAnalytics, setOrders]);
+
+  // Use live analytics or compute from local data
+  const totalRevenue =
+    analytics?.totalRevenue ?? orders.reduce((s, o) => s + o.total, 0);
+  const totalExpenses =
+    analytics?.totalExpenses ?? expenses.reduce((s, e) => s + e.amount, 0);
+  const netProfit = analytics?.netProfit ?? totalRevenue - totalExpenses;
+  const totalCustomers = analytics?.totalCustomers ?? customers.length;
+  const avgOrder =
+    analytics?.averageOrderValue ??
+    (orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0);
+
   const pending = orders.filter((o) => o.status === "Pending").length;
   const completed = orders.filter((o) => o.status === "Delivered").length;
   const cancelled = orders.filter((o) => o.status === "Cancelled").length;
-  const avgOrder =
-    orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
   const adSpend = expenses
     .filter((e) => e.category === "Ad Spend")
     .reduce((s, e) => s + e.amount, 0);
   const lowStock = products.filter((p) => p.stock < 30).length;
   const pendingTasks = tasks.filter((t) => !t.completed).length;
-
   const recentOrders = [...orders].slice(0, 6);
 
   const statusColor: Record<string, string> = {
@@ -54,6 +126,15 @@ export default function AdminPDashboard() {
       title="Dashboard Overview"
       subtitle="Welcome back — here's your Forestheals business at a glance"
     >
+      {/* Live indicator */}
+      {actor && !isFetching && (
+        <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-100 rounded-full px-3 py-1 w-fit mb-4">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          Live data — auto-refreshes every 30s
+          <RefreshCw className="w-3 h-3" />
+        </div>
+      )}
+
       {/* KPI Grid */}
       <div
         className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-6"
@@ -94,7 +175,7 @@ export default function AdminPDashboard() {
         />
         <APKpiCard
           label="Total Customers"
-          value={customers.length}
+          value={totalCustomers}
           icon={Users}
           color="green"
         />
@@ -190,6 +271,16 @@ export default function AdminPDashboard() {
                     </td>
                   </tr>
                 ))}
+                {recentOrders.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-5 py-8 text-center text-gray-400 text-sm"
+                    >
+                      No orders yet
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -300,3 +391,16 @@ export default function AdminPDashboard() {
     </AdminPLayout>
   );
 }
+
+function mapOrderStatus(status: string): APOrder["status"] {
+  const map: Record<string, APOrder["status"]> = {
+    pending: "Pending",
+    processing: "Processing",
+    shipped: "Shipped",
+    delivered: "Delivered",
+    cancelled: "Cancelled",
+  };
+  return map[status] ?? "Pending";
+}
+
+type APOrder = import("./adminpStore").APOrder;

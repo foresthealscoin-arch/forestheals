@@ -67,19 +67,15 @@ export function Footer() {
       {/* Main footer */}
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Brand */}
+          {/* Brand — logo large, borderless, no box */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-flex items-center mb-5">
-              <div className="rounded-2xl p-3 bg-white inline-block shadow-soft">
-                <img
-                  src="/assets/logo.png"
-                  alt="Forestheals"
-                  className="h-20 w-auto object-contain"
-                  style={{
-                    minWidth: "180px",
-                  }}
-                />
-              </div>
+              <img
+                src="/assets/logo.png"
+                alt="Forestheals"
+                className="h-20 sm:h-24 w-auto object-contain drop-shadow"
+                style={{ maxWidth: "200px" }}
+              />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4">
               From forest to homes. Premium Ayurvedic wellness products crafted

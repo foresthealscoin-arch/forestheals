@@ -51,10 +51,35 @@ mixin (
     result;
   };
 
-  public shared ({ caller }) func deleteReview(reviewId : Nat) : async Bool {
+  public shared ({ caller }) func rejectReview(reviewId : Nat) : async Bool {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can delete reviews");
+      Runtime.trap("Unauthorized: Only admins can reject reviews");
     };
     ReviewLib.deleteReview(reviewStore, reviewId);
+  };
+
+  public query ({ caller }) func getAllReviews() : async [ReviewTypes.Review] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can list all reviews");
+    };
+    reviewStore.toArray();
+  };
+
+  public shared ({ caller }) func createReview(input : ReviewTypes.AddReviewInput) : async ReviewTypes.Review {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Must be logged in to leave a review");
+    };
+    if (ReviewLib.hasUserReviewedProduct(reviewStore, caller, input.productId)) {
+      Runtime.trap("You have already reviewed this product");
+    };
+    if (input.rating < 1 or input.rating > 5) {
+      Runtime.trap("Rating must be between 1 and 5");
+    };
+    let id = nextReviewId.value;
+    nextReviewId.value += 1;
+    let review = ReviewLib.addReview(reviewStore, id, caller, input);
+    let (avg, count) = ReviewLib.calcAverageRating(reviewStore, input.productId);
+    ProductLib.updateRating(productStore, input.productId, avg, count);
+    review;
   };
 };

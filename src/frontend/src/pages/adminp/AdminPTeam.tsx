@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Plus, ShieldCheck, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

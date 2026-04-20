@@ -22,4 +22,12 @@ mixin (
     };
     B2BLib.listInquiries(inquiryStore);
   };
+
+  /// Alias: getB2BInquiries
+  public query ({ caller }) func getB2BInquiries() : async [B2BTypes.B2BInquiry] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can view B2B inquiries");
+    };
+    B2BLib.listInquiries(inquiryStore);
+  };
 };
