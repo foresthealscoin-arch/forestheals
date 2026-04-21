@@ -7,6 +7,7 @@ import { Link, redirect } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
+  Calendar,
   CheckCircle2,
   CreditCard,
   FileText,
@@ -19,10 +20,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useCart } from "../hooks/useCart";
 import { useCreateOrder } from "../hooks/useOrders";
-import { formatPrice } from "../lib/formatters";
+import { formatDate, formatPrice } from "../lib/formatters";
 import { PRODUCTS_SEED_DATA } from "../lib/seedData";
 import { useAuthStore } from "../stores/useAuthStore";
-import type { Address, CreateOrderInput, PaymentMethod } from "../types";
+import type { Address, CreateOrderInput, Order, PaymentMethod } from "../types";
 
 const FREE_SHIPPING_THRESHOLD = 499;
 const SHIPPING_FEE = 49;
@@ -92,11 +93,195 @@ function ConfettiPiece({ index }: { index: number }) {
   );
 }
 
+// ─── Success Screen ───────────────────────────────────────────────────────────
+function SuccessScreen({
+  order,
+}: { order: Order; cartItems: typeof PRODUCTS_SEED_DATA }) {
+  const estimatedDelivery = new Date();
+  estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
+
+  return (
+    <div
+      className="min-h-[85vh] flex flex-col items-center justify-center gap-6 px-4 sm:px-6 py-10 relative overflow-hidden"
+      data-ocid="checkout.success_state"
+    >
+      {/* Confetti */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-10">
+        {CONFETTI_PIECES.map((c) => (
+          <ConfettiPiece key={c.id} index={c.index} />
+        ))}
+      </div>
+
+      {/* Check icon */}
+      <motion.div
+        initial={{ scale: 0, rotate: -15 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 200, damping: 14 }}
+        className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-primary/10 flex items-center justify-center"
+      >
+        <CheckCircle2 className="w-12 h-12 sm:w-14 sm:h-14 text-primary" />
+      </motion.div>
+
+      {/* Headline */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="text-center max-w-sm"
+      >
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-2">
+          Order Placed! 🎉
+        </h1>
+        <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+          Thank you for choosing Forestheals. Your order is confirmed and we'll
+          start processing it right away.
+        </p>
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-full mt-3">
+          <Package className="w-4 h-4 text-primary" />
+          <span className="text-sm font-mono font-semibold text-foreground">
+            Order #{order.id}
+          </span>
+        </div>
+      </motion.div>
+
+      {/* Order summary card */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        className="glass-card rounded-2xl p-5 shadow-soft w-full max-w-md text-sm"
+        data-ocid="checkout.success.order_summary"
+      >
+        {/* Items */}
+        <div className="space-y-2.5 mb-4">
+          {order.items.slice(0, 3).map((item) => {
+            const product = PRODUCTS_SEED_DATA.find(
+              (p) => p.id === item.productId,
+            );
+            return (
+              <div key={item.productId} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
+                  {product && (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground line-clamp-1">
+                    {product?.name ?? `Product #${item.productId}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Qty: {item.quantity}
+                  </p>
+                </div>
+                <p className="text-xs font-semibold text-primary shrink-0">
+                  {formatPrice(item.price * item.quantity)}
+                </p>
+              </div>
+            );
+          })}
+          {order.items.length > 3 && (
+            <p className="text-xs text-muted-foreground text-center">
+              +{order.items.length - 3} more item
+              {order.items.length - 3 > 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+
+        <Separator className="my-3" />
+
+        {/* Total + Delivery */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center font-semibold text-base">
+            <span className="text-foreground">Total Paid</span>
+            <span className="text-primary">
+              {formatPrice(order.totalAmount)}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+            <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>
+              Estimated delivery by{" "}
+              <strong className="text-foreground">
+                {formatDate(estimatedDelivery.getTime())}
+              </strong>
+            </span>
+          </div>
+          {order.paymentMethod === "cod" && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+              <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>
+                Pay{" "}
+                <strong className="text-foreground">
+                  {formatPrice(order.totalAmount)}
+                </strong>{" "}
+                when your order arrives
+              </span>
+            </div>
+          )}
+          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+            <FileText className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+            <span>
+              GST invoice will be available in your dashboard for download.
+            </span>
+          </div>
+        </div>
+
+        {/* Address summary */}
+        <Separator className="my-3" />
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <p className="flex items-center gap-1.5 font-medium text-foreground">
+            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+            Delivering to: {order.address.fullName}
+          </p>
+          <p className="pl-5">
+            {order.address.line1}
+            {order.address.line2 ? `, ${order.address.line2}` : ""}
+          </p>
+          <p className="pl-5">
+            {order.address.city}, {order.address.state} —{" "}
+            {order.address.pincode}
+          </p>
+        </div>
+      </motion.div>
+
+      {/* CTAs */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.65 }}
+        className="flex flex-col sm:flex-row gap-3 w-full max-w-md z-20"
+      >
+        <Button
+          size="lg"
+          asChild
+          className="flex-1 shadow-green"
+          data-ocid="checkout.success.orders_button"
+        >
+          <Link to="/dashboard">View My Orders</Link>
+        </Button>
+        <Button
+          size="lg"
+          variant="outline"
+          asChild
+          className="flex-1"
+          data-ocid="checkout.success.shop_button"
+        >
+          <Link to="/products">Continue Shopping</Link>
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const { isLoggedIn, principal } = useAuthStore();
   const { items, discount, couponCode, clearAllCart } = useCart();
   const createOrder = useCreateOrder();
-  const [orderId, setOrderId] = useState<number | null>(null);
+  const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
 
   const [step, setStep] = useState<CheckoutStep>("address");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
@@ -139,17 +324,24 @@ export default function CheckoutPage() {
     /^\d{6}$/.test(address.pincode);
 
   const handlePlaceOrder = async () => {
+    const addressWithGst: Address = gstNumber
+      ? { ...address, gstNumber }
+      : address;
     const input: CreateOrderInput = {
       items,
       totalAmount: grandTotal,
       paymentMethod,
-      address,
+      address: addressWithGst,
       couponCode: couponCode || undefined,
       discountAmount: discount,
     };
-    const order = await createOrder.mutateAsync(input);
-    clearAllCart();
-    setOrderId(order.id);
+    try {
+      const order = await createOrder.mutateAsync(input);
+      clearAllCart();
+      setPlacedOrder(order);
+    } catch {
+      // error toast handled in mutation onError
+    }
   };
 
   const steps: { id: CheckoutStep; label: string; icon: typeof MapPin }[] = [
@@ -160,89 +352,8 @@ export default function CheckoutPage() {
   const stepIndex = steps.findIndex((s) => s.id === step);
 
   // Order placed success screen
-  if (orderId !== null) {
-    return (
-      <div
-        className="min-h-[85vh] flex flex-col items-center justify-center gap-8 px-4 relative overflow-hidden"
-        data-ocid="checkout.success_state"
-      >
-        {/* Confetti */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-10">
-          {CONFETTI_PIECES.map((c) => (
-            <ConfettiPiece key={c.id} index={c.index} />
-          ))}
-        </div>
-
-        <motion.div
-          initial={{ scale: 0, rotate: -15 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 14 }}
-          className="w-28 h-28 rounded-full bg-primary/10 flex items-center justify-center"
-        >
-          <CheckCircle2 className="w-14 h-14 text-primary" />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="text-center max-w-md"
-        >
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            Order Placed! 🎉
-          </h1>
-          <p className="text-muted-foreground leading-relaxed mb-2">
-            Thank you for choosing Forestheals. Your order has been confirmed
-            and we'll start processing it right away.
-          </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-full mt-2">
-            <Package className="w-4 h-4 text-primary" />
-            <span className="text-sm font-mono font-semibold text-foreground">
-              Order #{orderId}
-            </span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="glass-card rounded-2xl p-4 shadow-soft max-w-sm w-full text-sm text-muted-foreground"
-        >
-          <div className="flex items-start gap-3">
-            <FileText className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-            <p>
-              A GST invoice will be generated for your order. You can download
-              it from your dashboard.
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.65 }}
-          className="flex flex-col sm:flex-row gap-3 z-20"
-        >
-          <Button
-            size="lg"
-            asChild
-            className="shadow-green"
-            data-ocid="checkout.success.orders_button"
-          >
-            <Link to="/dashboard">View My Orders</Link>
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            asChild
-            data-ocid="checkout.success.shop_button"
-          >
-            <Link to="/products">Continue Shopping</Link>
-          </Button>
-        </motion.div>
-      </div>
-    );
+  if (placedOrder !== null) {
+    return <SuccessScreen order={placedOrder} cartItems={PRODUCTS_SEED_DATA} />;
   }
 
   // Empty cart guard
@@ -270,26 +381,26 @@ export default function CheckoutPage() {
 
   return (
     <div
-      className="min-h-screen bg-background py-8 px-4 sm:px-6"
+      className="min-h-screen bg-background py-6 sm:py-8 px-4 sm:px-6"
       data-ocid="checkout.page"
     >
       <div className="container max-w-5xl mx-auto">
         {/* Back + Title */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             asChild
-            className="gap-1.5"
+            className="gap-1.5 shrink-0"
             data-ocid="checkout.back.button"
           >
             <Link to="/cart">
-              <ArrowLeft className="w-4 h-4" /> Back to Cart
+              <ArrowLeft className="w-4 h-4" /> Back
             </Link>
           </Button>
           <Separator orientation="vertical" className="h-5" />
-          <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground">
+          <h1 className="font-display text-lg sm:text-2xl font-bold text-foreground">
             Secure Checkout
           </h1>
           <ShieldCheck className="w-5 h-5 text-primary ml-auto hidden sm:block" />
@@ -297,7 +408,7 @@ export default function CheckoutPage() {
 
         {/* Step progress */}
         <div
-          className="flex items-center gap-0 mb-8 sm:mb-10 max-w-xs sm:max-w-sm mx-auto"
+          className="flex items-center gap-0 mb-6 sm:mb-10 max-w-xs sm:max-w-sm mx-auto"
           data-ocid="checkout.steps.nav"
         >
           {steps.map((s, idx) => (
@@ -339,7 +450,7 @@ export default function CheckoutPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
           {/* Form Column */}
           <div className="lg:col-span-3">
             <AnimatePresence mode="wait">
@@ -351,14 +462,14 @@ export default function CheckoutPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.25 }}
-                  className="glass-card rounded-2xl p-6 shadow-soft space-y-5"
+                  className="glass-card rounded-2xl p-5 sm:p-6 shadow-soft space-y-4 sm:space-y-5"
                   data-ocid="checkout.address.panel"
                 >
                   <h2 className="font-semibold text-foreground flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-primary" /> Delivery Address
                   </h2>
 
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-1.5">
                       <Label htmlFor="fullName">Full Name *</Label>
                       <Input
@@ -506,7 +617,7 @@ export default function CheckoutPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.25 }}
-                  className="glass-card rounded-2xl p-6 shadow-soft space-y-5"
+                  className="glass-card rounded-2xl p-5 sm:p-6 shadow-soft space-y-5"
                   data-ocid="checkout.payment.panel"
                 >
                   <h2 className="font-semibold text-foreground flex items-center gap-2">
@@ -557,7 +668,7 @@ export default function CheckoutPage() {
                       </div>
                     </label>
 
-                    {/* Stripe option */}
+                    {/* Online option */}
                     <label
                       className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-smooth ${
                         paymentMethod === "stripe"
@@ -645,9 +756,10 @@ export default function CheckoutPage() {
                   {/* Review — Cart items */}
                   <div className="glass-card rounded-2xl p-5 shadow-soft">
                     <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
-                      <Package className="w-4 h-4 text-primary" /> Order Items
+                      <Package className="w-4 h-4 text-primary" /> Order Items (
+                      {items.length})
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-h-48 overflow-y-auto scrollbar-hide">
                       {items.map((item, i) => {
                         const product = PRODUCTS_SEED_DATA.find(
                           (p) => p.id === item.productId,
@@ -658,7 +770,7 @@ export default function CheckoutPage() {
                             className="flex items-center gap-3"
                             data-ocid={`checkout.review.item.${i + 1}`}
                           >
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted shrink-0">
+                            <div className="w-11 h-11 rounded-lg overflow-hidden bg-muted shrink-0">
                               {product && (
                                 <img
                                   src={product.imageUrl}
@@ -776,7 +888,7 @@ export default function CheckoutPage() {
                     </p>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       type="button"
                       variant="outline"
@@ -813,7 +925,7 @@ export default function CheckoutPage() {
           {/* Order Summary Sidebar */}
           <div className="lg:col-span-2">
             <div
-              className="glass-card rounded-2xl p-6 shadow-elevated sticky top-24"
+              className="glass-card rounded-2xl p-5 sm:p-6 shadow-elevated lg:sticky lg:top-24"
               data-ocid="checkout.summary.card"
             >
               <h2 className="font-display font-semibold text-base text-foreground mb-4 pb-3 border-b border-border">
@@ -821,7 +933,7 @@ export default function CheckoutPage() {
               </h2>
 
               {/* Product list */}
-              <div className="space-y-3 mb-4 max-h-48 overflow-y-auto scrollbar-hide">
+              <div className="space-y-3 mb-4 max-h-40 overflow-y-auto scrollbar-hide">
                 {items.map((item) => {
                   const p = PRODUCTS_SEED_DATA.find(
                     (pr) => pr.id === item.productId,

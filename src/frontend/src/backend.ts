@@ -110,12 +110,15 @@ export interface AdminTask {
     priority: string;
 }
 export interface Address__1 {
-    street: string;
     country: string;
     gstNumber?: string;
     city: string;
-    postalCode: string;
+    fullName: string;
+    line1: string;
+    line2?: string;
     state: string;
+    phone: string;
+    pincode: string;
 }
 export interface TransformationOutput {
     status: bigint;
@@ -270,6 +273,7 @@ export interface Order {
     userId: Principal;
     discountAmount: bigint;
     createdAt: bigint;
+    updatedAt: bigint;
     totalAmount: bigint;
     address: Address__1;
     stripePaymentId?: string;
@@ -2382,6 +2386,7 @@ function from_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promise<Uin
     userId: Principal;
     discountAmount: bigint;
     createdAt: bigint;
+    updatedAt: bigint;
     totalAmount: bigint;
     address: _Address__1;
     stripePaymentId: [] | [string];
@@ -2394,6 +2399,7 @@ function from_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promise<Uin
     userId: Principal;
     discountAmount: bigint;
     createdAt: bigint;
+    updatedAt: bigint;
     totalAmount: bigint;
     address: Address__1;
     stripePaymentId?: string;
@@ -2407,6 +2413,7 @@ function from_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promise<Uin
         userId: value.userId,
         discountAmount: value.discountAmount,
         createdAt: value.createdAt,
+        updatedAt: value.updatedAt,
         totalAmount: value.totalAmount,
         address: from_candid_Address__1_n29(_uploadFile, _downloadFile, value.address),
         stripePaymentId: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.stripePaymentId)),
@@ -2414,27 +2421,36 @@ function from_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promise<Uin
     };
 }
 function from_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    street: string;
     country: string;
     gstNumber: [] | [string];
     city: string;
-    postalCode: string;
+    fullName: string;
+    line1: string;
+    line2: [] | [string];
     state: string;
+    phone: string;
+    pincode: string;
 }): {
-    street: string;
     country: string;
     gstNumber?: string;
     city: string;
-    postalCode: string;
+    fullName: string;
+    line1: string;
+    line2?: string;
     state: string;
+    phone: string;
+    pincode: string;
 } {
     return {
-        street: value.street,
         country: value.country,
         gstNumber: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.gstNumber)),
         city: value.city,
-        postalCode: value.postalCode,
-        state: value.state
+        fullName: value.fullName,
+        line1: value.line1,
+        line2: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.line2)),
+        state: value.state,
+        phone: value.phone,
+        pincode: value.pincode
     };
 }
 function from_candid_record_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -2841,27 +2857,36 @@ function to_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     };
 }
 function to_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    street: string;
     country: string;
     gstNumber?: string;
     city: string;
-    postalCode: string;
+    fullName: string;
+    line1: string;
+    line2?: string;
     state: string;
+    phone: string;
+    pincode: string;
 }): {
-    street: string;
     country: string;
     gstNumber: [] | [string];
     city: string;
-    postalCode: string;
+    fullName: string;
+    line1: string;
+    line2: [] | [string];
     state: string;
+    phone: string;
+    pincode: string;
 } {
     return {
-        street: value.street,
         country: value.country,
         gstNumber: value.gstNumber ? candid_some(value.gstNumber) : candid_none(),
         city: value.city,
-        postalCode: value.postalCode,
-        state: value.state
+        fullName: value.fullName,
+        line1: value.line1,
+        line2: value.line2 ? candid_some(value.line2) : candid_none(),
+        state: value.state,
+        phone: value.phone,
+        pincode: value.pincode
     };
 }
 function to_candid_record_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

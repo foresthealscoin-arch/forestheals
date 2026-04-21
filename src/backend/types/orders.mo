@@ -13,10 +13,13 @@ module {
   };
 
   public type Address = {
-    street : Text;
+    fullName : Text;
+    phone : Text;
+    line1 : Text;
+    line2 : ?Text;
     city : Text;
     state : Text;
-    postalCode : Text;
+    pincode : Text;
     country : Text;
     gstNumber : ?Text;
   };
@@ -36,6 +39,7 @@ module {
     paymentMethod : PaymentMethod;
     address : Address;
     createdAt : Int;
+    updatedAt : Int;
     stripePaymentId : ?Text;
     couponCode : ?Text;
     discountAmount : Nat;

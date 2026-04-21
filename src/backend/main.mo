@@ -8,7 +8,7 @@ import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
 import OutCall "mo:caffeineai-http-outcalls/outcall";
 import Stripe "mo:caffeineai-stripe/stripe";
 import ProductLib "lib/products";
-
+import Migration "migration";
 
 import ProductTypes "types/products";
 import OrderTypes "types/orders";
@@ -35,6 +35,7 @@ import UsersApi "mixins/users-api";
 import ActivityApi "mixins/activity-api";
 
 
+(with migration = Migration.run)
 actor {
   // --- Authorization ---
   let accessControlState = AccessControl.initState();

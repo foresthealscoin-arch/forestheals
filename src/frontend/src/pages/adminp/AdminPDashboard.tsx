@@ -1,4 +1,3 @@
-import { useActor } from "@caffeineai/core-infrastructure";
 import {
   BarChart3,
   CheckCircle2,
@@ -13,112 +12,49 @@ import {
   Warehouse,
   XCircle,
 } from "lucide-react";
-import { useEffect } from "react";
-import { createActor } from "../../backend";
+import { useAllOrders } from "../../hooks/useOrders";
+import { formatPrice } from "../../lib/formatters";
 import { APKpiCard, AdminPLayout } from "./AdminPLayout";
 import { useAdminPStore } from "./adminpStore";
 
 export default function AdminPDashboard() {
-  const orders = useAdminPStore((s) => s.orders);
   const products = useAdminPStore((s) => s.products);
   const customers = useAdminPStore((s) => s.customers);
   const expenses = useAdminPStore((s) => s.expenses);
   const tasks = useAdminPStore((s) => s.tasks);
-  const analytics = useAdminPStore((s) => s.analytics);
-  const setAnalytics = useAdminPStore((s) => s.setAnalytics);
-  const setOrders = useAdminPStore((s) => s.setOrders);
 
-  const { actor, isFetching } = useActor(createActor);
+  const { data: orders = [], isLoading, refetch } = useAllOrders();
 
-  // Fetch analytics from backend on mount and every 30s
-  useEffect(() => {
-    if (!actor || isFetching) return;
-
-    const fetchData = async () => {
-      try {
-        const stats = await actor.getAnalytics();
-        setAnalytics({
-          totalRevenue: Number(stats.totalRevenue),
-          totalOrders: Number(stats.totalOrders),
-          totalCustomers: Number(stats.totalCustomers),
-          averageOrderValue: Number(stats.avgOrderValue),
-          netProfit: Number(stats.netProfit),
-          totalExpenses: Number(stats.totalExpenses),
-        });
-      } catch {
-        // use local calculations as fallback
-      }
-
-      try {
-        const allOrders = await actor.listAllOrders();
-        const mapped = allOrders.map((o) => ({
-          id: `ORD-${String(o.id)}`,
-          customer: `${o.userId.toText().slice(0, 12)}…`,
-          email: "",
-          phone: "",
-          address: o.address.street,
-          city: o.address.city,
-          state: o.address.state,
-          pincode: o.address.postalCode,
-          products: o.items.map((i) => ({
-            name: `Product #${String(i.productId)}`,
-            qty: Number(i.quantity),
-            price: Number(i.price),
-          })),
-          total: Number(o.totalAmount),
-          paymentMethod: (String(o.paymentMethod) === "cod"
-            ? "COD"
-            : "Online") as "COD" | "Online",
-          paymentStatus: "Paid" as const,
-          status: mapOrderStatus(String(o.status)),
-          trackingId: "",
-          notes: "",
-          createdAt: new Date(Number(o.createdAt) / 1_000_000)
-            .toISOString()
-            .split("T")[0],
-        }));
-        if (mapped.length > 0) setOrders(mapped);
-      } catch {
-        // keep local orders
-      }
-    };
-
-    void fetchData();
-    const interval = setInterval(() => void fetchData(), 30_000);
-    return () => clearInterval(interval);
-  }, [actor, isFetching, setAnalytics, setOrders]);
-
-  // Use live analytics or compute from local data
-  const totalRevenue =
-    analytics?.totalRevenue ?? orders.reduce((s, o) => s + o.total, 0);
-  const totalExpenses =
-    analytics?.totalExpenses ?? expenses.reduce((s, e) => s + e.amount, 0);
-  const netProfit = analytics?.netProfit ?? totalRevenue - totalExpenses;
-  const totalCustomers = analytics?.totalCustomers ?? customers.length;
-  const avgOrder =
-    analytics?.averageOrderValue ??
-    (orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0);
-
-  const pending = orders.filter((o) => o.status === "Pending").length;
-  const completed = orders.filter((o) => o.status === "Delivered").length;
-  const cancelled = orders.filter((o) => o.status === "Cancelled").length;
+  // KPI calculations from real order data
+  const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const netProfit = totalRevenue - totalExpenses;
+  const pending = orders.filter((o) => o.status === "pending").length;
+  const completed = orders.filter((o) => o.status === "delivered").length;
+  const cancelled = orders.filter((o) => o.status === "cancelled").length;
   const adSpend = expenses
     .filter((e) => e.category === "Ad Spend")
     .reduce((s, e) => s + e.amount, 0);
   const lowStock = products.filter((p) => p.stock < 30).length;
   const pendingTasks = tasks.filter((t) => !t.completed).length;
+  const avgOrder =
+    orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
   const recentOrders = [...orders].slice(0, 6);
 
   const statusColor: Record<string, string> = {
-    Pending: "bg-yellow-100 text-yellow-800",
-    Confirmed: "bg-blue-100 text-blue-800",
-    Processing: "bg-purple-100 text-purple-800",
-    Packed: "bg-indigo-100 text-indigo-800",
-    Shipped: "bg-cyan-100 text-cyan-800",
-    Delivered: "bg-green-100 text-green-800",
-    Cancelled: "bg-red-100 text-red-800",
-    Returned: "bg-orange-100 text-orange-800",
-    Refunded: "bg-gray-100 text-gray-700",
+    pending: "bg-yellow-100 text-yellow-800",
+    confirmed: "bg-blue-100 text-blue-800",
+    shipped: "bg-cyan-100 text-cyan-800",
+    delivered: "bg-green-100 text-green-800",
+    cancelled: "bg-red-100 text-red-800",
+  };
+
+  const statusLabel: Record<string, string> = {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    shipped: "Shipped",
+    delivered: "Delivered",
+    cancelled: "Cancelled",
   };
 
   return (
@@ -127,13 +63,21 @@ export default function AdminPDashboard() {
       subtitle="Welcome back — here's your Forestheals business at a glance"
     >
       {/* Live indicator */}
-      {actor && !isFetching && (
-        <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-100 rounded-full px-3 py-1 w-fit mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-100 rounded-full px-3 py-1 w-fit">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           Live data — auto-refreshes every 30s
           <RefreshCw className="w-3 h-3" />
         </div>
-      )}
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 transition-colors"
+          data-ocid="adminp.dashboard.refresh_button"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
+      </div>
 
       {/* KPI Grid */}
       <div
@@ -142,27 +86,27 @@ export default function AdminPDashboard() {
       >
         <APKpiCard
           label="Total Revenue"
-          value={`₹${totalRevenue.toLocaleString("en-IN")}`}
+          value={formatPrice(totalRevenue)}
           icon={TrendingUp}
           color="green"
           data-ocid="adminp.kpi.revenue"
         />
         <APKpiCard
           label="Total Orders"
-          value={orders.length}
+          value={isLoading ? "…" : orders.length}
           sub={`${completed} delivered`}
           icon={ShoppingCart}
           color="blue"
         />
         <APKpiCard
           label="Pending Orders"
-          value={pending}
+          value={isLoading ? "…" : pending}
           icon={Clock}
           color="yellow"
         />
         <APKpiCard
           label="Net Profit"
-          value={`₹${netProfit.toLocaleString("en-IN")}`}
+          value={formatPrice(netProfit)}
           icon={DollarSign}
           color={netProfit >= 0 ? "green" : "red"}
         />
@@ -175,37 +119,37 @@ export default function AdminPDashboard() {
         />
         <APKpiCard
           label="Total Customers"
-          value={totalCustomers}
+          value={customers.length}
           icon={Users}
           color="green"
         />
         <APKpiCard
           label="Avg Order Value"
-          value={`₹${avgOrder.toLocaleString("en-IN")}`}
+          value={formatPrice(avgOrder)}
           icon={BarChart3}
           color="blue"
         />
         <APKpiCard
           label="Marketing Spend"
-          value={`₹${adSpend.toLocaleString("en-IN")}`}
+          value={formatPrice(adSpend)}
           icon={Tag}
           color="yellow"
         />
         <APKpiCard
           label="Completed Orders"
-          value={completed}
+          value={isLoading ? "…" : completed}
           icon={CheckCircle2}
           color="green"
         />
         <APKpiCard
           label="Cancelled Orders"
-          value={cancelled}
+          value={isLoading ? "…" : cancelled}
           icon={XCircle}
           color="red"
         />
         <APKpiCard
           label="Total Expenses"
-          value={`₹${totalExpenses.toLocaleString("en-IN")}`}
+          value={formatPrice(totalExpenses)}
           icon={Warehouse}
           color="red"
         />
@@ -254,19 +198,20 @@ export default function AdminPDashboard() {
                     className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
                   >
                     <td className="px-5 py-3 font-mono text-xs text-gray-500">
-                      {order.id}
+                      #{order.id}
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell text-gray-700 font-medium text-xs">
-                      {order.customer}
+                      {order.address.fullName ||
+                        `${order.userId.slice(0, 12)}…`}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 text-xs">
-                      ₹{order.total.toLocaleString("en-IN")}
+                      {formatPrice(order.totalAmount)}
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[order.status] ?? "bg-gray-100 text-gray-700"}`}
                       >
-                        {order.status}
+                        {statusLabel[order.status] ?? order.status}
                       </span>
                     </td>
                   </tr>
@@ -275,9 +220,11 @@ export default function AdminPDashboard() {
                   <tr>
                     <td
                       colSpan={4}
-                      className="px-5 py-8 text-center text-gray-400 text-sm"
+                      className="px-5 py-10 text-center text-gray-400 text-sm"
                     >
-                      No orders yet
+                      {isLoading
+                        ? "Loading orders…"
+                        : "No orders yet — orders placed by customers will appear here."}
                     </td>
                   </tr>
                 )}
@@ -335,7 +282,13 @@ export default function AdminPDashboard() {
                   .map((t, i) => (
                     <div key={t.id} className="flex items-start gap-2 text-xs">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${t.priority === "High" ? "bg-red-100 text-red-700" : t.priority === "Medium" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"}`}
+                        className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                          t.priority === "High"
+                            ? "bg-red-100 text-red-700"
+                            : t.priority === "Medium"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-600"
+                        }`}
                       >
                         {t.priority}
                       </span>
@@ -371,12 +324,12 @@ export default function AdminPDashboard() {
                       <div className="flex justify-between text-xs text-gray-600 mb-1">
                         <span>{cat}</span>
                         <span className="font-medium">
-                          ₹{amt.toLocaleString("en-IN")} ({pct}%)
+                          {formatPrice(amt)} ({pct}%)
                         </span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-[#004a38] rounded-full"
+                          className="h-full bg-[#004a38] rounded-full transition-all duration-500"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -391,16 +344,3 @@ export default function AdminPDashboard() {
     </AdminPLayout>
   );
 }
-
-function mapOrderStatus(status: string): APOrder["status"] {
-  const map: Record<string, APOrder["status"]> = {
-    pending: "Pending",
-    processing: "Processing",
-    shipped: "Shipped",
-    delivered: "Delivered",
-    cancelled: "Cancelled",
-  };
-  return map[status] ?? "Pending";
-}
-
-type APOrder = import("./adminpStore").APOrder;

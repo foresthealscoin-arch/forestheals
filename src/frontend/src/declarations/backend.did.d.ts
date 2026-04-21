@@ -40,12 +40,15 @@ export interface Address {
   'isDefault' : boolean,
 }
 export interface Address__1 {
-  'street' : string,
   'country' : string,
   'gstNumber' : [] | [string],
   'city' : string,
-  'postalCode' : string,
+  'fullName' : string,
+  'line1' : string,
+  'line2' : [] | [string],
   'state' : string,
+  'phone' : string,
+  'pincode' : string,
 }
 export interface AdminCoupon {
   'id' : string,
@@ -220,6 +223,7 @@ export interface Order {
   'userId' : Principal,
   'discountAmount' : bigint,
   'createdAt' : bigint,
+  'updatedAt' : bigint,
   'totalAmount' : bigint,
   'address' : Address__1,
   'stripePaymentId' : [] | [string],

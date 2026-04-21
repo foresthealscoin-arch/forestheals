@@ -406,9 +406,18 @@ export default function CartPage() {
 
                 {shipping > 0 && (
                   <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                    Add {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} more
-                    for free shipping
+                    Add{" "}
+                    <strong className="text-foreground">
+                      {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)}
+                    </strong>{" "}
+                    more for free shipping 🚚
                   </p>
+                )}
+                {shipping === 0 && (
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary bg-primary/8 border border-primary/20 rounded-lg px-3 py-2">
+                    <span>🎉</span> Free shipping unlocked! Orders above ₹499
+                    ship free.
+                  </div>
                 )}
 
                 <div className="flex justify-between text-muted-foreground">
@@ -430,7 +439,6 @@ export default function CartPage() {
                 size="lg"
                 className="w-full mt-6 gap-2 shadow-green font-semibold text-base"
                 asChild
-                disabled={items.length === 0}
                 data-ocid="cart.checkout.primary_button"
               >
                 <Link to="/checkout">

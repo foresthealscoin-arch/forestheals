@@ -14,6 +14,7 @@ module {
     discountAmount : Nat,
     totalAmount : Nat,
   ) : OrderTypes.Order {
+    let now = Time.now();
     let order : OrderTypes.Order = {
       id = nextId;
       userId = userId;
@@ -22,7 +23,8 @@ module {
       status = #pending;
       paymentMethod = input.paymentMethod;
       address = input.address;
-      createdAt = Time.now();
+      createdAt = now;
+      updatedAt = now;
       stripePaymentId = input.stripePaymentId;
       couponCode = input.couponCode;
       discountAmount = discountAmount;
@@ -49,10 +51,11 @@ module {
     status : OrderTypes.OrderStatus,
   ) : Bool {
     var found = false;
+    let now = Time.now();
     store.mapInPlace(func(o) {
       if (o.id == id) {
         found := true;
-        { o with status };
+        { o with status; updatedAt = now };
       } else { o };
     });
     found;

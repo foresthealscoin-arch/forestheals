@@ -163,6 +163,7 @@ type Order =
    status: OrderStatus;
    stripePaymentId: opt text;
    totalAmount: nat;
+   updatedAt: int;
    userId: principal;
  };
 type InventoryItem = 
@@ -352,10 +353,13 @@ type Address__1 =
  record {
    city: text;
    country: text;
+   fullName: text;
    gstNumber: opt text;
-   postalCode: text;
+   line1: text;
+   line2: opt text;
+   phone: text;
+   pincode: text;
    state: text;
-   street: text;
  };
 type Address = 
  record {

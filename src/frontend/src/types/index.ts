@@ -42,6 +42,7 @@ export interface Address {
   state: string;
   pincode: string;
   country: string;
+  gstNumber?: string;
 }
 
 export interface Order {
@@ -53,6 +54,7 @@ export interface Order {
   paymentMethod: PaymentMethod;
   address: Address;
   createdAt: number;
+  updatedAt?: number;
   stripePaymentId?: string;
   couponCode?: string;
   discountAmount: number;

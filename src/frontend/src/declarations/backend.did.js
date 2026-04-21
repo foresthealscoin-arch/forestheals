@@ -125,12 +125,15 @@ export const PaymentMethod = IDL.Variant({
   'stripe' : IDL.Null,
 });
 export const Address__1 = IDL.Record({
-  'street' : IDL.Text,
   'country' : IDL.Text,
   'gstNumber' : IDL.Opt(IDL.Text),
   'city' : IDL.Text,
-  'postalCode' : IDL.Text,
+  'fullName' : IDL.Text,
+  'line1' : IDL.Text,
+  'line2' : IDL.Opt(IDL.Text),
   'state' : IDL.Text,
+  'phone' : IDL.Text,
+  'pincode' : IDL.Text,
 });
 export const CartItem = IDL.Record({
   'productId' : IDL.Nat,
@@ -159,6 +162,7 @@ export const Order = IDL.Record({
   'userId' : IDL.Principal,
   'discountAmount' : IDL.Nat,
   'createdAt' : IDL.Int,
+  'updatedAt' : IDL.Int,
   'totalAmount' : IDL.Nat,
   'address' : Address__1,
   'stripePaymentId' : IDL.Opt(IDL.Text),
@@ -662,12 +666,15 @@ export const idlFactory = ({ IDL }) => {
   });
   const PaymentMethod = IDL.Variant({ 'cod' : IDL.Null, 'stripe' : IDL.Null });
   const Address__1 = IDL.Record({
-    'street' : IDL.Text,
     'country' : IDL.Text,
     'gstNumber' : IDL.Opt(IDL.Text),
     'city' : IDL.Text,
-    'postalCode' : IDL.Text,
+    'fullName' : IDL.Text,
+    'line1' : IDL.Text,
+    'line2' : IDL.Opt(IDL.Text),
     'state' : IDL.Text,
+    'phone' : IDL.Text,
+    'pincode' : IDL.Text,
   });
   const CartItem = IDL.Record({
     'productId' : IDL.Nat,
@@ -696,6 +703,7 @@ export const idlFactory = ({ IDL }) => {
     'userId' : IDL.Principal,
     'discountAmount' : IDL.Nat,
     'createdAt' : IDL.Int,
+    'updatedAt' : IDL.Int,
     'totalAmount' : IDL.Nat,
     'address' : Address__1,
     'stripePaymentId' : IDL.Opt(IDL.Text),
