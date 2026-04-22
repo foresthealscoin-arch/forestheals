@@ -49,22 +49,25 @@ const ECO_PRACTICES = [
 
 const TEAM = [
   {
-    name: "Arjun Sharma",
+    name: "Prateek Raj Kumawat",
     role: "Founder & CEO",
-    bio: "Ayurvedic practitioner with 12 years of experience in herbal farming and natural product development.",
-    initials: "AS",
+    bio: "Visionary entrepreneur who built Forestheals from the Aravalli foothills — driven by a belief that India's forests hold the world's finest remedies.",
+    initials: "PRK",
+    quote: '"The forest doesn\'t need us. We need the forest."',
   },
   {
-    name: "Priya Nair",
-    role: "Chief Product Officer",
-    bio: "Botanist and formulation specialist dedicated to preserving potency in every batch.",
-    initials: "PN",
+    name: "Anya",
+    role: "Co-Founder — Marketing & CRM",
+    bio: "Brand strategist and customer relationship architect. Anya shapes every touchpoint of the Forestheals experience — from first discovery to loyal community.",
+    initials: "AY",
+    quote: null,
   },
   {
-    name: "Vikram Patel",
-    role: "Head of Sustainability",
-    bio: "Environmental engineer ensuring every step of our supply chain meets ecological standards.",
-    initials: "VP",
+    name: "Arjun",
+    role: "CFO — Financial Operations & AI",
+    bio: "AI-powered financial intelligence driving sustainable growth. Arjun manages forecasting, treasury, and intelligent cost optimization across all business verticals.",
+    initials: "AI",
+    quote: null,
   },
 ];
 
@@ -73,38 +76,38 @@ const FLOW_STEPS = [
   {
     step: 1,
     icon: "🌿",
-    title: "Forest Sourcing",
-    desc: "Pure ingredients sourced directly from sustainable Indian forests",
+    title: "Source from Forests",
+    desc: "Pure ingredients sourced directly from sustainable Indian forests and organic farm networks.",
   },
   {
     step: 2,
     icon: "⚗️",
-    title: "Ayurvedic Formulation",
-    desc: "Ancient recipes modernized by certified Vaidyas and scientists",
+    title: "Scientific Formulation",
+    desc: "Ancient recipes modernized by certified Vaidyas, botanists, and food scientists.",
   },
   {
     step: 3,
-    icon: "🏭",
-    title: "Quality Manufacturing",
-    desc: "GMP-certified facilities ensuring 100% purity and consistency",
+    icon: "🛒",
+    title: "Direct-to-Consumer",
+    desc: "Cutting out middlemen — delivered fresh from our facility straight to your home.",
   },
   {
     step: 4,
-    icon: "🛒",
-    title: "Digital-First Distribution",
-    desc: "Direct-to-consumer via forestheals.com + Amazon + quick commerce",
+    icon: "✈️",
+    title: "Export Globally",
+    desc: "Bringing Indian Ayurvedic wellness to 50+ countries via B2B and export partnerships.",
   },
   {
     step: 5,
-    icon: "⭐",
-    title: "Community & Trust",
-    desc: "10M+ loyal customers through results-backed products and transparency",
+    icon: "🤝",
+    title: "Build Community",
+    desc: "10M+ loyal customers through results-backed products, education, and radical transparency.",
   },
   {
     step: 6,
     icon: "🏆",
-    title: "₹10,000 Crore Impact",
-    desc: "Achieved through scale, exports to 50+ countries, and B2B partnerships",
+    title: "₹10,000 Cr Impact",
+    desc: "India's first ₹10,000 Crore natural wellness brand — built on forests, trust, and purpose.",
     isFinal: true,
   },
 ];
@@ -308,12 +311,12 @@ export default function AboutPage() {
             </h2>
             <div className="space-y-4 sm:space-y-5 text-muted-foreground leading-relaxed text-base sm:text-lg">
               <p>
-                Forestheals was born in 2021 in the foothills of Rajasthan,
-                where our founder Arjun Sharma grew up watching his grandmother
-                prepare herbal remedies for the entire village. Witnessing how
-                modern commerce stripped away the purity and integrity of
-                Ayurvedic products, he set out to build a brand that would
-                restore that trust.
+                Forestheals was born in the ancient city of Beawar, nestled at
+                the gateway to the Aravalli hills — where traditional healers
+                have sourced medicinal plants for centuries. Our founder Prateek
+                Raj Kumawat grew up watching the wisdom of Ayurveda being
+                diluted by mass-market shortcuts. He set out to build a brand
+                that would restore purity, transparency, and reverence.
               </p>
               <p>
                 We work directly with over 200 organic farmers across Rajasthan,
@@ -548,40 +551,154 @@ export default function AboutPage() {
         data-ocid="about.team.section"
       >
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-8 sm:mb-10 text-center">
-            The Team
-          </h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8 sm:mb-10"
+          >
+            <Badge className="bg-primary/10 text-primary border-primary/20 mb-4">
+              The Team
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+              The People Behind Forestheals
+            </h2>
+          </motion.div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
-            {TEAM.map(({ name, role, bio, initials }, i) => (
+            {TEAM.map(({ name, role, bio, initials, quote }, i) => (
               <motion.div
                 key={name}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12, duration: 0.4 }}
-                className="glass-card rounded-2xl p-5 sm:p-6 shadow-soft text-center"
+                className="glass-card rounded-2xl p-5 sm:p-6 shadow-soft text-center flex flex-col"
+                data-ocid={`about.team.${i + 1}.card`}
               >
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-lg sm:text-xl font-bold text-primary">
-                    {initials}
-                  </span>
+                <div
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary-foreground font-bold text-base sm:text-lg"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, oklch(0.28 0.09 162), oklch(0.40 0.11 155))",
+                  }}
+                >
+                  {initials}
                 </div>
-                <h3 className="font-bold text-foreground text-sm sm:text-base">
+                <h3 className="font-bold text-foreground text-sm sm:text-base leading-tight">
                   {name}
                 </h3>
-                <p className="text-sm text-primary font-medium mb-3">{role}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs sm:text-sm text-primary font-semibold mb-3 mt-0.5">
+                  {role}
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {bio}
                 </p>
+                {quote && (
+                  <p className="mt-4 text-xs italic text-primary/70 border-t border-border pt-3">
+                    {quote}
+                  </p>
+                )}
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Charity */}
+      {/* HQ Location */}
       <section
         className="bg-muted/30 py-14 sm:py-16 px-4"
+        data-ocid="about.hq.section"
+      >
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8"
+          >
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <MapPin className="w-7 h-7 text-primary" />
+              </div>
+            </div>
+            <Badge className="bg-primary/10 text-primary border-primary/20 mb-4">
+              Our Headquarters
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
+              Rooted in Beawar
+            </h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="glass-card rounded-3xl p-7 sm:p-10 shadow-soft grid md:grid-cols-2 gap-8 items-center"
+          >
+            <div>
+              <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3">
+                Beawar, Rajasthan
+              </h3>
+              <p className="text-muted-foreground leading-relaxed text-sm sm:text-base mb-5">
+                Beawar sits at the eastern gateway to the Aravalli mountain
+                range — one of India's oldest forest ecosystems and a rich
+                corridor for medicinal herbs like ashwagandha, shatavari, and
+                neem. Our roots here are not just geographic; they are the
+                source of everything we make.
+              </p>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <span className="text-sm text-foreground font-medium">
+                  Forestheals HQ, Beawar, Rajasthan 305 901, India
+                </span>
+              </div>
+            </div>
+            <div
+              className="rounded-2xl p-6 sm:p-8 text-primary-foreground text-center space-y-4"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.22 0.08 162), oklch(0.35 0.1 150))",
+              }}
+            >
+              <div className="text-4xl mb-2">🏔️</div>
+              <h4 className="font-bold text-lg text-secondary">
+                Gateway to the Aravalli
+              </h4>
+              <p className="text-primary-foreground/80 text-sm leading-relaxed">
+                One of India's oldest mountain ecosystems — home to over 400
+                species of medicinal plants used in classical Ayurvedic texts.
+              </p>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                {[
+                  { label: "Medicinal Species", value: "400+" },
+                  { label: "Forest Coverage", value: "23,000 ha" },
+                  { label: "Farm Partners", value: "200+" },
+                  { label: "States Sourced", value: "6" },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className="bg-primary-foreground/10 rounded-xl p-2"
+                  >
+                    <div className="text-secondary font-bold text-lg leading-tight">
+                      {value}
+                    </div>
+                    <div className="text-primary-foreground/70 text-xs">
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Charity */}
+      <section
+        className="bg-background py-14 sm:py-16 px-4"
         data-ocid="about.charity.section"
       >
         <div className="max-w-4xl mx-auto text-center">
@@ -620,7 +737,7 @@ export default function AboutPage() {
 
       {/* Contact */}
       <section
-        className="bg-background py-12 sm:py-14 px-4"
+        className="bg-muted/30 py-12 sm:py-14 px-4"
         data-ocid="about.contact.section"
       >
         <div className="max-w-4xl mx-auto">
@@ -634,12 +751,13 @@ export default function AboutPage() {
               {
                 icon: MapPin,
                 label: "Address",
-                value: "Forestheals HQ, Jaipur, Rajasthan 302001",
+                value: "Forestheals HQ, Beawar, Rajasthan 305 901, India",
               },
             ].map(({ icon: Icon, label, value }) => (
               <div
                 key={label}
                 className="glass-card rounded-2xl p-4 sm:p-5 shadow-soft text-center"
+                data-ocid={`about.contact.${label.toLowerCase()}.card`}
               >
                 <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary mx-auto mb-3" />
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">

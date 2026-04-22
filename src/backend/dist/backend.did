@@ -18,11 +18,16 @@ type UserRole =
 type UserProfile = 
  record {
    addresses: vec Address;
+   city: text;
+   country: text;
    createdAt: int;
    email: text;
    id: principal;
    name: text;
    phone: text;
+   phoneVerified: bool;
+   pincode: text;
+   state: text;
  };
 type UserActivity = 
  record {
@@ -35,9 +40,13 @@ type UserActivity =
 type UpdateUserInput = 
  record {
    addresses: vec Address;
+   city: text;
+   country: text;
    email: text;
    name: text;
    phone: text;
+   pincode: text;
+   state: text;
  };
 type TransformationOutput = 
  record {
@@ -49,6 +58,12 @@ type TransformationInput =
  record {
    context: blob;
    response: http_request_result;
+ };
+type TopProduct = 
+ record {
+   productId: nat;
+   revenue: nat;
+   unitsSold: nat;
  };
 type TeamMember = 
  record {
@@ -79,9 +94,15 @@ type StoreSettings =
    contactPhone: text;
    currency: text;
    facebookUrl: text;
+   faviconUrl: text;
    freeShippingThreshold: nat;
    gstNumber: text;
+   gstRate: nat;
    instagramUrl: text;
+   logoUrl: text;
+   seoDescription: text;
+   seoTitle: text;
+   shippingDefault: nat;
    storeName: text;
    timezone: text;
    whatsappNumber: text;
@@ -111,6 +132,12 @@ type RegisterUserInput =
    name: text;
    phone: text;
  };
+type ProductStatus = 
+ variant {
+   active;
+   draft;
+   inactive;
+ };
 type ProductFilter = 
  record {
    category: opt text;
@@ -120,22 +147,26 @@ type ProductFilter =
    minRating: opt float64;
    searchQuery: opt text;
    sortBy: opt text;
+   status: opt ProductStatus;
  };
 type Product = 
  record {
    bestseller: bool;
    bundleIds: vec nat;
    category: Category;
+   comparePrice: opt nat;
    description: text;
    discount: nat;
    featured: bool;
    id: nat;
    imageKey: text;
    imageUrl: text;
+   images: vec text;
    name: text;
    price: nat;
    ratings: float64;
    reviewCount: nat;
+   status: ProductStatus;
    stock: nat;
  };
 type PaymentMethod = 
@@ -143,10 +174,18 @@ type PaymentMethod =
    cod;
    stripe;
  };
+type PaymentBreakdown = 
+ record {
+   codAmount: nat;
+   codCount: nat;
+   onlineAmount: nat;
+   onlineCount: nat;
+ };
 type OrderStatus = 
  variant {
    cancelled;
-   delivered;
+   completed;
+   confirmed;
    pending;
    processing;
    shipped;
@@ -159,12 +198,28 @@ type Order =
    discountAmount: nat;
    id: nat;
    items: vec CartItem;
+   notes: opt text;
    paymentMethod: PaymentMethod;
    status: OrderStatus;
    stripePaymentId: opt text;
    totalAmount: nat;
    updatedAt: int;
    userId: principal;
+ };
+type MonthRevenue = 
+ record {
+   month: text;
+   orders: nat;
+   revenue: nat;
+ };
+type InventorySummaryItem = 
+ record {
+   availableStock: nat;
+   lowStockFlag: bool;
+   outOfStockFlag: bool;
+   productId: nat;
+   productName: text;
+   reservedStock: nat;
  };
 type InventoryItem = 
  record {
@@ -193,37 +248,70 @@ type FlashSale =
 type EnrichedCustomerProfile = 
  record {
    activityCount: nat;
+   addresses: vec Address;
+   city: text;
+   country: text;
    createdAt: int;
    email: text;
    id: principal;
    lastLogin: opt int;
    name: text;
    phone: text;
+   pincode: text;
+   state: text;
    status: text;
    totalOrders: nat;
    totalSpend: nat;
+ };
+type DayRevenue = 
+ record {
+   date: text;
+   orders: nat;
+   revenue: nat;
+ };
+type DashboardKPIs = 
+ record {
+   lowStockCount: nat;
+   monthOrders: nat;
+   monthRevenue: nat;
+   pendingOrderCount: nat;
+   pendingReviewCount: nat;
+   todayOrders: nat;
+   todayRevenue: nat;
+   totalCustomers: nat;
+   totalOrders: nat;
+   totalProducts: nat;
+   totalRevenue: nat;
+   weekOrders: nat;
+   weekRevenue: nat;
  };
 type CreateProductInput = 
  record {
    bestseller: bool;
    bundleIds: vec nat;
    category: Category;
+   comparePrice: opt nat;
    description: text;
    discount: nat;
    featured: bool;
    imageKey: text;
    imageUrl: text;
+   images: vec text;
    name: text;
    price: nat;
+   status: ProductStatus;
    stock: nat;
  };
 type CreateOrderInput = 
  record {
    address: Address__1;
+   addressId: opt text;
    couponCode: opt text;
    items: vec CartItem;
+   notes: opt text;
    paymentMethod: PaymentMethod;
    stripePaymentId: opt text;
+   userId: opt text;
  };
 type CreateFlashSaleInput = 
  record {
@@ -259,6 +347,7 @@ type CartItem =
  record {
    price: nat;
    productId: nat;
+   productType: opt text;
    quantity: nat;
  };
 type BlogPost = 
@@ -299,6 +388,19 @@ type B2BInquiry =
    productInterest: text;
    quantity: text;
  };
+type AnalyticsSummary = 
+ record {
+   avgOrderValue: nat;
+   customerCount: nat;
+   netProfit: int;
+   orderCount: nat;
+   paymentBreakdown: PaymentBreakdown;
+   revenueByDay: vec DayRevenue;
+   revenueByMonth: vec MonthRevenue;
+   topProducts: vec TopProduct;
+   totalExpenses: nat;
+   totalRevenue: nat;
+ };
 type AdminTask = 
  record {
    assignedTo: opt text;
@@ -325,6 +427,11 @@ type AdminNotification =
    message: text;
    notificationType: text;
    read: bool;
+ };
+type AdminLoginResult = 
+ variant {
+   err: text;
+   ok: bool;
  };
 type AdminExpense = 
  record {
@@ -365,8 +472,11 @@ type Address =
  record {
    city: text;
    country: text;
+   fullName: text;
+   id: text;
    isDefault: bool;
-   postalCode: text;
+   phone: text;
+   pincode: text;
    state: text;
    street: text;
    tag: text;
@@ -402,6 +512,7 @@ service : {
   addTeamMember: (member: TeamMember) -> (TeamMember);
   addToCart: (productId: nat, quantity: nat, price: nat) -> ();
   addToWishlist: (productId: nat) -> ();
+  adminListProducts: () -> (vec Product) query;
   approveReview: (reviewId: nat) -> (bool);
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
   cancelOrder: (id: nat) -> (bool);
@@ -432,6 +543,7 @@ service : {
   getActiveFlashSales: () -> (vec FlashSale) query;
   getAdminCoupons: () -> (vec AdminCoupon) query;
   getAdminNotifications: () -> (vec AdminNotification) query;
+  getAdminSession: () -> (bool) query;
   getAdminStats: () -> (AdminStats) query;
   getAdminTasks: () -> (vec AdminTask) query;
   getAllActivities: () -> (vec UserActivity) query;
@@ -454,6 +566,7 @@ service : {
       totalRegisteredUsers: nat;
       totalRevenue: nat;
     }) query;
+  getAnalyticsSummary: () -> (AnalyticsSummary) query;
   getB2BInquiries: () -> (vec B2BInquiry) query;
   getBlogPosts: () -> (vec BlogPost) query;
   getCallerUserRole: () -> (UserRole) query;
@@ -461,20 +574,23 @@ service : {
   getCoupons: () -> (vec Coupon) query;
   getCustomerProfile: (userId: principal) ->
    (opt EnrichedCustomerProfile) query;
+  getDashboardKPIs: () -> (DashboardKPIs) query;
   getExpenses: () -> (vec AdminExpense) query;
   getExpensesByCategory: () -> (vec record {
                                       text;
                                       nat;
                                     }) query;
   getInventoryItems: () -> (vec InventoryItem) query;
+  getInventorySummary: () -> (vec InventorySummaryItem) query;
   getLowStockItems: () -> (vec InventoryItem) query;
   getNewsletterSubscribers: () -> (vec text) query;
   getOrder: (id: nat) -> (opt Order) query;
   getProduct: (id: nat) -> (opt Product) query;
   getProductReviews: (productId: nat) -> (vec Review) query;
   getProducts: (filter: ProductFilter) -> (vec Product) query;
+  getRecentActivity: () -> (vec UserActivity) query;
   getRecommendations: (condition: text) -> (vec Product) query;
-  getStoreSettings: () -> (opt StoreSettings) query;
+  getStoreSettings: () -> (StoreSettings) query;
   getStripeSessionStatus: (sessionId: text) -> (StripeSessionStatus);
   getTasks: () -> (vec AdminTask) query;
   getTeamMembers: () -> (vec TeamMember) query;
@@ -491,6 +607,7 @@ service : {
   listBundles: () -> (vec Product) query;
   listEmails: () -> (vec text) query;
   listFeaturedProducts: () -> (vec Product) query;
+  listOrders: () -> (vec Order) query;
   listProducts: (filter: ProductFilter) -> (vec Product) query;
   listUserOrders: () -> (vec Order) query;
   logUserActivity: (activityType: ActivityType, metadata: text) ->
@@ -506,6 +623,7 @@ service : {
   removeTeamMember: (id: text) -> (bool);
   saveStoreSettings: (settings: StoreSettings) -> (StoreSettings);
   seedProducts: () -> ();
+  setAdminPassword: (newPassword: text) -> (AdminLoginResult);
   setStripeConfiguration: (config: StripeConfiguration) -> ();
   setUserRole: (user: principal, role: UserRole) -> ();
   submitB2BInquiry: (input: B2BInquiryInput) -> (B2BInquiry);
@@ -524,6 +642,7 @@ service : {
    text) -> (opt InventoryItem);
   updateInventoryStock: (productId: text, delta: int, _reason: text) ->
    (opt InventoryItem);
+  updateOrderNotes: (id: nat, notes: opt text) -> (bool);
   updateOrderStatus: (id: nat, status: OrderStatus) -> (bool);
   updateProduct: (id: nat, input: CreateProductInput) -> (bool);
   updateStoreSettings: (settings: StoreSettings) -> (StoreSettings);
@@ -532,5 +651,6 @@ service : {
   updateUserProfile: (input: UpdateUserInput) -> (opt UserProfile);
   upsertInventoryItem: (item: InventoryItem) -> (InventoryItem);
   validateCoupon: (code: text) -> (CouponValidation) query;
-  verifyAdminCredentials: (username: text, password: text) -> (bool);
+  verifyAdminCredentials: (username: text, password: text) ->
+   (AdminLoginResult);
 }

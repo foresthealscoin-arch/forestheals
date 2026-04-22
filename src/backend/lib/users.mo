@@ -20,6 +20,11 @@ module {
       name = input.name;
       email = input.email;
       phone = input.phone;
+      phoneVerified = false;
+      city = "";
+      state = "";
+      pincode = "";
+      country = "India";
       createdAt = Time.now();
       addresses = [];
     };
@@ -44,6 +49,10 @@ module {
           name = input.name;
           email = input.email;
           phone = input.phone;
+          city = input.city;
+          state = input.state;
+          pincode = input.pincode;
+          country = input.country;
           addresses = input.addresses;
         };
         store.add(userId, updated);
@@ -140,6 +149,11 @@ module {
       name = profile.name;
       email = profile.email;
       phone = profile.phone;
+      city = profile.city;
+      state = profile.state;
+      pincode = profile.pincode;
+      country = profile.country;
+      addresses = profile.addresses;
       createdAt = profile.createdAt;
       totalOrders;
       totalSpend;

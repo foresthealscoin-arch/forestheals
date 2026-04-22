@@ -16,8 +16,8 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useCart, useValidateCoupon } from "../hooks/useCart";
+import { useProducts } from "../hooks/useProducts";
 import { formatPrice } from "../lib/formatters";
-import { PRODUCTS_SEED_DATA } from "../lib/seedData";
 
 const FREE_SHIPPING_THRESHOLD = 499;
 const SHIPPING_FEE = 49;
@@ -36,6 +36,10 @@ export default function CartPage() {
   const validateCoupon = useValidateCoupon();
   const [couponInput, setCouponInput] = useState(couponCode || "");
   const [couponError, setCouponError] = useState("");
+
+  // Fetch products to display names/images in cart
+  const { data: products = [] } = useProducts();
+  const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
@@ -162,9 +166,7 @@ export default function CartPage() {
           <div className="lg:col-span-3 space-y-4">
             <AnimatePresence mode="popLayout">
               {items.map((item, i) => {
-                const product = PRODUCTS_SEED_DATA.find(
-                  (p) => p.id === item.productId,
-                );
+                const product = productMap[item.productId];
                 const lineTotal = item.price * item.quantity;
 
                 return (

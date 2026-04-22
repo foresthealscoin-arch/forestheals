@@ -23,13 +23,6 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const OrderDetailPage = lazy(() => import("./pages/OrderDetailPage"));
-const AdminDashboardPage = lazy(
-  () => import("./pages/admin/AdminDashboardPage"),
-);
-const AdminProductsPage = lazy(() => import("./pages/admin/AdminProductsPage"));
-const AdminOrdersPage = lazy(() => import("./pages/admin/AdminOrdersPage"));
-const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
-const AdminReviewsPage = lazy(() => import("./pages/admin/AdminReviewsPage"));
 const RecommendationPage = lazy(() => import("./pages/RecommendationPage"));
 const B2BPage = lazy(() => import("./pages/B2BPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
@@ -38,6 +31,8 @@ const BundlesPage = lazy(() => import("./pages/BundlesPage"));
 const TermsPage = lazy(() => import("./pages/legal/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/legal/PrivacyPage"));
 const RefundPage = lazy(() => import("./pages/legal/RefundPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 
 // Admin-P pages (standalone, no site Layout)
 const AdminPLoginPage = lazy(() => import("./pages/adminp/AdminPLoginPage"));
@@ -70,12 +65,6 @@ const rootRoute = createRootRoute({ component: AppRoot });
 function requireAuth() {
   const { isLoggedIn } = useAuthStore.getState();
   if (!isLoggedIn) throw redirect({ to: "/auth/login" });
-}
-
-function requireAdmin() {
-  const { isAdmin, isLoggedIn } = useAuthStore.getState();
-  if (!isLoggedIn) throw redirect({ to: "/auth/login" });
-  if (!isAdmin) throw redirect({ to: "/" });
 }
 
 function requireAdminP() {
@@ -130,36 +119,6 @@ const orderDetailRoute = createRoute({
   beforeLoad: requireAuth,
   component: () => <OrderDetailPage />,
 });
-const adminRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin",
-  beforeLoad: requireAdmin,
-  component: () => <AdminDashboardPage />,
-});
-const adminProductsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin/products",
-  beforeLoad: requireAdmin,
-  component: () => <AdminProductsPage />,
-});
-const adminOrdersRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin/orders",
-  beforeLoad: requireAdmin,
-  component: () => <AdminOrdersPage />,
-});
-const adminUsersRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin/users",
-  beforeLoad: requireAdmin,
-  component: () => <AdminUsersPage />,
-});
-const adminReviewsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin/reviews",
-  beforeLoad: requireAdmin,
-  component: () => <AdminReviewsPage />,
-});
 const recommendRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/recommend",
@@ -199,6 +158,16 @@ const refundRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/legal/refund",
   component: () => <RefundPage />,
+});
+const blogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/blog",
+  component: () => <BlogPage />,
+});
+const blogPostRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/blog/$slug",
+  component: () => <BlogPostPage />,
 });
 
 // Admin-P routes (standalone, no site Layout)
@@ -296,11 +265,6 @@ const routeTree = rootRoute.addChildren([
   signupRoute,
   dashboardRoute,
   orderDetailRoute,
-  adminRoute,
-  adminProductsRoute,
-  adminOrdersRoute,
-  adminUsersRoute,
-  adminReviewsRoute,
   recommendRoute,
   b2bRoute,
   aboutRoute,
@@ -309,6 +273,8 @@ const routeTree = rootRoute.addChildren([
   termsRoute,
   privacyRoute,
   refundRoute,
+  blogRoute,
+  blogPostRoute,
   // Admin-P standalone routes
   adminPLoginRoute,
   adminPDashboardRoute,

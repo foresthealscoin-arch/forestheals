@@ -7,44 +7,102 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit2, Minus, Package, Plus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertCircle,
+  Edit2,
+  Minus,
+  Package,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  useAdminInventory,
+  useUpdateInventory,
+} from "../../hooks/useAdminData";
+import type { InventorySummaryView } from "../../services/adminService";
 import { AdminPLayout } from "./AdminPLayout";
-import type { APInventoryItem } from "./adminpStore";
-import { useAdminPStore } from "./adminpStore";
 
 export default function AdminPInventory() {
-  const inventory = useAdminPStore((s) => s.inventory);
-  const updateInventoryItem = useAdminPStore((s) => s.updateInventoryItem);
+  const {
+    data: inventory = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useAdminInventory();
+  const updateMutation = useUpdateInventory();
+  const [editTarget, setEditTarget] = useState<InventorySummaryView | null>(
+    null,
+  );
+  const [adjustQty, setAdjustQty] = useState(1);
+  const [adjustNotes, setAdjustNotes] = useState("");
 
-  const [editTarget, setEditTarget] = useState<APInventoryItem | null>(null);
-  const [form, setForm] = useState<Partial<APInventoryItem>>({});
-
-  function openEdit(item: APInventoryItem) {
-    setEditTarget(item);
-    setForm({ ...item });
+  async function adjust(item: InventorySummaryView, delta: number) {
+    try {
+      await updateMutation.mutateAsync({
+        productId: `${item.productId}`,
+        quantity: delta,
+        type: delta > 0 ? "restock" : "sale",
+        notes: `Admin manual adjustment: ${delta > 0 ? "+" : ""}${String(delta)}`,
+      });
+      toast.success(
+        `Stock ${delta > 0 ? "increased" : "decreased"} by ${Math.abs(delta)}`,
+      );
+    } catch {
+      toast.error("Failed to update stock");
+    }
   }
 
-  function handleSave() {
-    if (!editTarget) return;
-    updateInventoryItem({ ...editTarget, ...form } as APInventoryItem);
-    toast.success("Inventory updated");
-    setEditTarget(null);
+  async function handleAdjust(type: "add" | "remove") {
+    if (!editTarget || adjustQty <= 0) return;
+    const delta = type === "add" ? adjustQty : -adjustQty;
+    try {
+      await updateMutation.mutateAsync({
+        productId: String(editTarget.productId),
+        quantity: delta,
+        type: type === "add" ? "restock" : "remove",
+        notes: adjustNotes || "Admin adjustment",
+      });
+      toast.success("Inventory updated");
+      setEditTarget(null);
+      setAdjustQty(1);
+      setAdjustNotes("");
+    } catch {
+      toast.error("Failed to update inventory");
+    }
   }
 
-  function adjust(item: APInventoryItem, delta: number) {
-    const updated = { ...item, current: Math.max(0, item.current + delta) };
-    updateInventoryItem(updated);
-    toast.success(
-      `Stock ${delta > 0 ? "increased" : "decreased"} by ${Math.abs(delta)}`,
+  if (isError) {
+    return (
+      <AdminPLayout title="Inventory Management" subtitle="Track stock levels">
+        <div
+          className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center"
+          data-ocid="adminp.inventory.error_state"
+        >
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-700 font-medium">Failed to load inventory</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry
+          </Button>
+        </div>
+      </AdminPLayout>
     );
   }
+
+  const lowStockCount = inventory.filter((i) => i.lowStockFlag).length;
+  const outOfStockCount = inventory.filter((i) => i.outOfStockFlag).length;
 
   return (
     <AdminPLayout
       title="Inventory Management"
-      subtitle="Track stock levels, batches, and suppliers"
+      subtitle="Track stock levels and availability"
     >
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -55,20 +113,19 @@ export default function AdminPInventory() {
             color: "text-gray-900",
           },
           {
-            label: "Low Stock Items",
-            value: inventory.filter((i) => i.current < i.lowStockThreshold)
-              .length,
+            label: "Low Stock",
+            value: lowStockCount,
             color: "text-orange-600",
           },
           {
             label: "Out of Stock",
-            value: inventory.filter((i) => i.current === 0).length,
+            value: outOfStockCount,
             color: "text-red-600",
           },
           {
-            label: "Incoming Stock",
-            value: inventory.filter((i) => i.incoming > 0).length,
-            color: "text-blue-600",
+            label: "In Stock",
+            value: inventory.length - outOfStockCount,
+            color: "text-green-700",
           },
         ].map((card) => (
           <div
@@ -85,245 +142,200 @@ export default function AdminPInventory() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm" data-ocid="adminp.inventory.table">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
-                <th className="text-left px-5 py-3 font-medium">Product</th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
-                  SKU
-                </th>
-                <th className="text-right px-4 py-3 font-medium">Current</th>
-                <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">
-                  Reserved
-                </th>
-                <th className="text-right px-4 py-3 font-medium hidden lg:table-cell">
-                  Incoming
-                </th>
-                <th className="text-left px-4 py-3 font-medium hidden xl:table-cell">
-                  Batch / Expiry
-                </th>
-                <th className="text-right px-4 py-3 font-medium">Adjust</th>
-                <th className="text-right px-4 py-3 font-medium">Edit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventory.map((item, i) => (
-                <tr
-                  key={item.id}
-                  data-ocid={`adminp.inventory.item.${i + 1}`}
-                  className={`border-t border-gray-50 hover:bg-gray-50/60 transition-colors ${item.current < item.lowStockThreshold ? "bg-orange-50/40" : ""}`}
-                >
-                  <td className="px-5 py-3">
-                    <p className="font-medium text-gray-900 text-sm truncate max-w-[150px]">
-                      {item.productName}
-                    </p>
-                    <p className="text-xs text-gray-400">{item.supplier}</p>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell font-mono text-xs text-gray-500">
-                    {item.sku}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span
-                      className={`font-bold text-sm ${item.current === 0 ? "text-red-600" : item.current < item.lowStockThreshold ? "text-orange-600" : "text-green-700"}`}
-                    >
-                      {item.current}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right hidden sm:table-cell text-gray-500 text-xs">
-                    {item.reserved}
-                  </td>
-                  <td className="px-4 py-3 text-right hidden lg:table-cell">
-                    {item.incoming > 0 ? (
-                      <span className="text-blue-600 font-medium text-xs">
-                        +{item.incoming}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 hidden xl:table-cell">
-                    <p className="text-xs text-gray-600">{item.batchNo}</p>
-                    <p className="text-xs text-gray-400">{item.expiryDate}</p>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => adjust(item, -1)}
-                        className="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
-                        data-ocid={`adminp.inventory.item.${i + 1}.decrease_button`}
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => adjust(item, 1)}
-                        className="w-6 h-6 rounded bg-green-100 hover:bg-green-200 flex items-center justify-center text-green-700 transition-colors"
-                        data-ocid={`adminp.inventory.item.${i + 1}.increase_button`}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
-                      onClick={() => openEdit(item)}
-                      data-ocid={`adminp.inventory.item.${i + 1}.edit_button`}
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {inventory.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-12 text-center"
-                    data-ocid="adminp.inventory.empty_state"
-                  >
-                    <Package className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-400 text-sm">No inventory items</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {isLoading ? (
+        <div className="space-y-2" data-ocid="adminp.inventory.loading_state">
+          {["a", "b", "c", "d", "e"].map((k) => (
+            <Skeleton key={k} className="h-14 w-full rounded-xl" />
+          ))}
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table
+              className="w-full text-sm"
+              data-ocid="adminp.inventory.table"
+            >
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
+                  <th className="text-left px-5 py-3 font-medium">Product</th>
+                  <th className="text-right px-4 py-3 font-medium">
+                    Available
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">
+                    Reserved
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
+                    Status
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium">
+                    Quick Adjust
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium">Edit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventory.map((item, i) => (
+                  <tr
+                    key={item.productId}
+                    data-ocid={`adminp.inventory.item.${i + 1}`}
+                    className={`border-t border-gray-50 hover:bg-gray-50/60 transition-colors ${item.lowStockFlag ? "bg-orange-50/40" : ""}`}
+                  >
+                    <td className="px-5 py-3">
+                      <p className="font-medium text-gray-900 text-sm truncate max-w-[180px]">
+                        {item.productName}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        ID: {item.productId}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span
+                        className={`font-bold text-sm ${item.outOfStockFlag ? "text-red-600" : item.lowStockFlag ? "text-orange-600" : "text-green-700"}`}
+                      >
+                        {item.availableStock}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right hidden sm:table-cell text-gray-500 text-xs">
+                      {item.reservedStock}
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      {item.outOfStockFlag ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                          Out of Stock
+                        </span>
+                      ) : item.lowStockFlag ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">
+                          Low Stock
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                          In Stock
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => void adjust(item, -1)}
+                          className="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+                          disabled={updateMutation.isPending}
+                          data-ocid={`adminp.inventory.item.${i + 1}.decrease_button`}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void adjust(item, 1)}
+                          className="w-6 h-6 rounded bg-green-100 hover:bg-green-200 flex items-center justify-center text-green-700 transition-colors"
+                          disabled={updateMutation.isPending}
+                          data-ocid={`adminp.inventory.item.${i + 1}.increase_button`}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          setEditTarget(item);
+                          setAdjustQty(1);
+                          setAdjustNotes("");
+                        }}
+                        data-ocid={`adminp.inventory.item.${i + 1}.edit_button`}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {inventory.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="py-12 text-center"
+                      data-ocid="adminp.inventory.empty_state"
+                    >
+                      <Package className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">
+                        No inventory data — add products to see inventory here
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* Edit Modal */}
+      {/* Adjust Modal */}
       <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>
         <DialogContent
-          className="max-w-md max-h-[90vh] overflow-y-auto"
+          className="max-w-sm"
           data-ocid="adminp.inventory.modal.dialog"
         >
           <DialogHeader>
-            <DialogTitle>
-              Edit Inventory — {editTarget?.productName}
-            </DialogTitle>
+            <DialogTitle>Adjust Stock — {editTarget?.productName}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Current Stock</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.current ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, current: Number(e.target.value) }))
-                  }
-                  data-ocid="adminp.inventory.modal.current_input"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Reserved</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.reserved ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, reserved: Number(e.target.value) }))
-                  }
-                  data-ocid="adminp.inventory.modal.reserved_input"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Incoming</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.incoming ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, incoming: Number(e.target.value) }))
-                  }
-                  data-ocid="adminp.inventory.modal.incoming_input"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Damaged</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.damaged ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, damaged: Number(e.target.value) }))
-                  }
-                  data-ocid="adminp.inventory.modal.damaged_input"
-                />
-              </div>
+            <div className="bg-gray-50 rounded-xl p-3 text-sm">
+              <p className="text-gray-500 text-xs mb-1">
+                Current Available Stock
+              </p>
+              <p className="font-bold text-gray-900 text-lg">
+                {editTarget?.availableStock ?? 0}
+              </p>
             </div>
             <div className="space-y-1.5">
-              <Label>Low Stock Threshold</Label>
+              <Label>Quantity</Label>
               <Input
                 type="number"
-                min={0}
-                value={form.lowStockThreshold ?? ""}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    lowStockThreshold: Number(e.target.value),
-                  }))
-                }
-                data-ocid="adminp.inventory.modal.threshold_input"
+                min={1}
+                value={adjustQty}
+                onChange={(e) => setAdjustQty(Number(e.target.value))}
+                data-ocid="adminp.inventory.modal.quantity_input"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Supplier</Label>
+              <Label>Notes (optional)</Label>
               <Input
-                value={form.supplier ?? ""}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, supplier: e.target.value }))
-                }
-                data-ocid="adminp.inventory.modal.supplier_input"
+                value={adjustNotes}
+                onChange={(e) => setAdjustNotes(e.target.value)}
+                placeholder="Reason for adjustment…"
+                data-ocid="adminp.inventory.modal.notes_input"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Batch Number</Label>
-                <Input
-                  value={form.batchNo ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, batchNo: e.target.value }))
-                  }
-                  data-ocid="adminp.inventory.modal.batch_input"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Expiry Date</Label>
-                <Input
-                  type="date"
-                  value={form.expiryDate ?? ""}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, expiryDate: e.target.value }))
-                  }
-                  data-ocid="adminp.inventory.modal.expiry_input"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 pt-1">
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <Button
-                className="flex-1 bg-[#004a38] hover:bg-[#003a2c]"
-                onClick={handleSave}
-                data-ocid="adminp.inventory.modal.submit_button"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => void handleAdjust("add")}
+                disabled={updateMutation.isPending}
+                data-ocid="adminp.inventory.modal.add_button"
               >
-                Save
+                <Plus className="w-4 h-4 mr-1" /> Add Stock
               </Button>
               <Button
                 variant="outline"
-                className="flex-1"
-                onClick={() => setEditTarget(null)}
-                data-ocid="adminp.inventory.modal.cancel_button"
+                className="border-red-200 text-red-600 hover:bg-red-50"
+                onClick={() => void handleAdjust("remove")}
+                disabled={updateMutation.isPending}
+                data-ocid="adminp.inventory.modal.remove_button"
               >
-                Cancel
+                <Minus className="w-4 h-4 mr-1" /> Remove
               </Button>
             </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setEditTarget(null)}
+              data-ocid="adminp.inventory.modal.cancel_button"
+            >
+              Cancel
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

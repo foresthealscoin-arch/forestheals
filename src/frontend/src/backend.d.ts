@@ -7,13 +7,35 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface UserProfile {
-    id: Principal;
-    name: string;
-    createdAt: bigint;
-    email: string;
-    addresses: Array<Address>;
-    phone: string;
+export interface UserActivity {
+    id: bigint;
+    activityType: ActivityType;
+    metadata: string;
+    userId: Principal;
+    timestamp: bigint;
+}
+export interface CartItem {
+    productId: bigint;
+    productType?: string;
+    quantity: bigint;
+    price: bigint;
+}
+export interface AnalyticsSummary {
+    revenueByDay: Array<DayRevenue>;
+    totalExpenses: bigint;
+    orderCount: bigint;
+    paymentBreakdown: PaymentBreakdown;
+    revenueByMonth: Array<MonthRevenue>;
+    topProducts: Array<TopProduct>;
+    customerCount: bigint;
+    totalRevenue: bigint;
+    avgOrderValue: bigint;
+    netProfit: bigint;
+}
+export interface TransformationOutput {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
 }
 export interface AdminTask {
     id: string;
@@ -27,6 +49,62 @@ export interface AdminTask {
     category: string;
     priority: string;
 }
+export interface AdminExpense {
+    id: string;
+    date: bigint;
+    createdBy: string;
+    description: string;
+    category: string;
+    amount: bigint;
+}
+export interface Address {
+    id: string;
+    tag: string;
+    street: string;
+    country: string;
+    city: string;
+    fullName: string;
+    state: string;
+    isDefault: boolean;
+    phone: string;
+    pincode: string;
+}
+export interface StoreSettings {
+    timezone: string;
+    seoTitle: string;
+    gstNumber: string;
+    freeShippingThreshold: bigint;
+    instagramUrl: string;
+    whatsappNumber: string;
+    logoUrl: string;
+    currency: string;
+    storeName: string;
+    contactEmail: string;
+    shippingDefault: bigint;
+    gstRate: bigint;
+    seoDescription: string;
+    faviconUrl: string;
+    facebookUrl: string;
+    contactPhone: string;
+}
+export interface AddReviewInput {
+    text: string;
+    productId: bigint;
+    rating: bigint;
+}
+export interface AdminCoupon {
+    id: string;
+    minCartValue: bigint;
+    active: boolean;
+    discountValue: bigint;
+    expiresAt?: bigint;
+    code: string;
+    createdAt: bigint;
+    discountType: string;
+    usedCount: bigint;
+    description: string;
+    maxUses: bigint;
+}
 export interface Address__1 {
     country: string;
     gstNumber?: string;
@@ -38,55 +116,10 @@ export interface Address__1 {
     phone: string;
     pincode: string;
 }
-export interface TransformationOutput {
-    status: bigint;
-    body: Uint8Array;
-    headers: Array<http_header>;
-}
-export interface AdminExpense {
-    id: string;
-    date: bigint;
-    createdBy: string;
-    description: string;
-    category: string;
-    amount: bigint;
-}
-export interface Address {
-    tag: string;
-    street: string;
-    country: string;
-    city: string;
-    postalCode: string;
-    state: string;
-    isDefault: boolean;
-}
-export interface AddReviewInput {
-    text: string;
-    productId: bigint;
-    rating: bigint;
-}
-export interface StoreSettings {
-    timezone: string;
-    gstNumber: string;
-    freeShippingThreshold: bigint;
-    instagramUrl: string;
-    whatsappNumber: string;
-    currency: string;
-    storeName: string;
-    contactEmail: string;
-    facebookUrl: string;
-    contactPhone: string;
-}
-export interface B2BInquiry {
-    id: bigint;
-    contactName: string;
-    createdAt: bigint;
-    email: string;
-    message: string;
-    productInterest: string;
-    companyName: string;
-    quantity: string;
-    phone: string;
+export interface MonthRevenue {
+    month: string;
+    revenue: bigint;
+    orders: bigint;
 }
 export interface InventoryItem {
     supplierContact: string;
@@ -102,21 +135,44 @@ export interface InventoryItem {
     currentStock: bigint;
     damagedStock: bigint;
 }
+export interface B2BInquiry {
+    id: bigint;
+    contactName: string;
+    createdAt: bigint;
+    email: string;
+    message: string;
+    productInterest: string;
+    companyName: string;
+    quantity: string;
+    phone: string;
+}
+export interface TopProduct {
+    revenue: bigint;
+    productId: bigint;
+    unitsSold: bigint;
+}
 export interface TransformationInput {
     context: Uint8Array;
     response: http_request_result;
 }
-export interface CouponValidation {
-    valid: boolean;
-    discountPercent: bigint;
-    message: string;
+export interface PaymentBreakdown {
+    onlineCount: bigint;
+    onlineAmount: bigint;
+    codAmount: bigint;
+    codCount: bigint;
 }
-export interface CreateOrderInput {
-    couponCode?: string;
-    paymentMethod: PaymentMethod;
-    address: Address__1;
-    stripePaymentId?: string;
-    items: Array<CartItem>;
+export interface DayRevenue {
+    revenue: bigint;
+    date: string;
+    orders: bigint;
+}
+export interface InventorySummaryItem {
+    outOfStockFlag: boolean;
+    productId: bigint;
+    productName: string;
+    reservedStock: bigint;
+    availableStock: bigint;
+    lowStockFlag: boolean;
 }
 export type StripeSessionStatus = {
     __kind__: "completed";
@@ -134,14 +190,20 @@ export interface StripeConfiguration {
     allowedCountries: Array<string>;
     secretKey: string;
 }
-export interface B2BInquiryInput {
-    contactName: string;
-    email: string;
+export interface CreateOrderInput {
+    couponCode?: string;
+    paymentMethod: PaymentMethod;
+    userId?: string;
+    addressId?: string;
+    address: Address__1;
+    notes?: string;
+    stripePaymentId?: string;
+    items: Array<CartItem>;
+}
+export interface CouponValidation {
+    valid: boolean;
+    discountPercent: bigint;
     message: string;
-    productInterest: string;
-    companyName: string;
-    quantity: string;
-    phone: string;
 }
 export interface Review {
     id: bigint;
@@ -169,11 +231,24 @@ export interface BlogPost {
     metaTitle: string;
     excerpt: string;
 }
+export interface B2BInquiryInput {
+    contactName: string;
+    email: string;
+    message: string;
+    productInterest: string;
+    companyName: string;
+    quantity: string;
+    phone: string;
+}
 export interface UpdateUserInput {
+    country: string;
+    city: string;
     name: string;
     email: string;
+    state: string;
     addresses: Array<Address>;
     phone: string;
+    pincode: string;
 }
 export interface Coupon {
     active: boolean;
@@ -194,6 +269,7 @@ export interface Order {
     updatedAt: bigint;
     totalAmount: bigint;
     address: Address__1;
+    notes?: string;
     stripePaymentId?: string;
     items: Array<CartItem>;
 }
@@ -207,6 +283,7 @@ export interface http_request_result {
     headers: Array<http_header>;
 }
 export interface ProductFilter {
+    status?: ProductStatus;
     featured?: boolean;
     minRating?: number;
     sortBy?: string;
@@ -216,10 +293,12 @@ export interface ProductFilter {
     searchQuery?: string;
 }
 export interface CreateProductInput {
+    status: ProductStatus;
     featured: boolean;
     bundleIds: Array<bigint>;
     name: string;
     description: string;
+    comparePrice?: bigint;
     stock: bigint;
     imageKey: string;
     imageUrl: string;
@@ -227,7 +306,15 @@ export interface CreateProductInput {
     category: Category;
     price: bigint;
     bestseller: boolean;
+    images: Array<string>;
 }
+export type AdminLoginResult = {
+    __kind__: "ok";
+    ok: boolean;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface ShoppingItem {
     productName: string;
     currency: string;
@@ -245,17 +332,17 @@ export interface AdminStats {
     totalOrders: bigint;
     totalRevenue: bigint;
 }
-export interface CreateCouponInput {
-    expiryDate: bigint;
-    code: string;
-    discountPercent: bigint;
-    maxUses: bigint;
-}
 export interface CreateFlashSaleInput {
     startTime: bigint;
     endTime: bigint;
     discountPercent: bigint;
     productId: bigint;
+}
+export interface CreateCouponInput {
+    expiryDate: bigint;
+    code: string;
+    discountPercent: bigint;
+    maxUses: bigint;
 }
 export interface AdminNotification {
     id: string;
@@ -277,11 +364,16 @@ export interface EnrichedCustomerProfile {
     id: Principal;
     status: string;
     totalOrders: bigint;
+    country: string;
+    city: string;
     name: string;
     createdAt: bigint;
     email: string;
+    state: string;
     totalSpend: bigint;
+    addresses: Array<Address>;
     phone: string;
+    pincode: string;
     lastLogin?: bigint;
     activityCount: bigint;
 }
@@ -293,38 +385,30 @@ export interface FlashSale {
     discountPercent: bigint;
     productId: bigint;
 }
-export interface CartItem {
-    productId: bigint;
-    quantity: bigint;
-    price: bigint;
-}
-export interface AdminCoupon {
-    id: string;
-    minCartValue: bigint;
-    active: boolean;
-    discountValue: bigint;
-    expiresAt?: bigint;
-    code: string;
-    createdAt: bigint;
-    discountType: string;
-    usedCount: bigint;
-    description: string;
-    maxUses: bigint;
-}
-export interface UserActivity {
-    id: bigint;
-    activityType: ActivityType;
-    metadata: string;
-    userId: Principal;
-    timestamp: bigint;
+export interface DashboardKPIs {
+    totalProducts: bigint;
+    weekOrders: bigint;
+    totalOrders: bigint;
+    pendingOrderCount: bigint;
+    monthOrders: bigint;
+    monthRevenue: bigint;
+    lowStockCount: bigint;
+    pendingReviewCount: bigint;
+    todayRevenue: bigint;
+    totalRevenue: bigint;
+    totalCustomers: bigint;
+    weekRevenue: bigint;
+    todayOrders: bigint;
 }
 export interface Product {
     id: bigint;
+    status: ProductStatus;
     featured: boolean;
     bundleIds: Array<bigint>;
     name: string;
     ratings: number;
     description: string;
+    comparePrice?: bigint;
     stock: bigint;
     imageKey: string;
     imageUrl: string;
@@ -333,6 +417,20 @@ export interface Product {
     price: bigint;
     bestseller: boolean;
     reviewCount: bigint;
+    images: Array<string>;
+}
+export interface UserProfile {
+    id: Principal;
+    country: string;
+    city: string;
+    name: string;
+    createdAt: bigint;
+    email: string;
+    state: string;
+    addresses: Array<Address>;
+    phone: string;
+    pincode: string;
+    phoneVerified: boolean;
 }
 export enum ActivityType {
     Login = "Login",
@@ -355,12 +453,18 @@ export enum OrderStatus {
     shipped = "shipped",
     cancelled = "cancelled",
     pending = "pending",
-    delivered = "delivered",
+    completed = "completed",
+    confirmed = "confirmed",
     processing = "processing"
 }
 export enum PaymentMethod {
     cod = "cod",
     stripe = "stripe"
+}
+export enum ProductStatus {
+    active = "active",
+    inactive = "inactive",
+    draft = "draft"
 }
 export enum UserRole {
     admin = "admin",
@@ -373,6 +477,7 @@ export interface backendInterface {
     addTeamMember(member: TeamMember): Promise<TeamMember>;
     addToCart(productId: bigint, quantity: bigint, price: bigint): Promise<void>;
     addToWishlist(productId: bigint): Promise<void>;
+    adminListProducts(): Promise<Array<Product>>;
     approveReview(reviewId: bigint): Promise<boolean>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     cancelOrder(id: bigint): Promise<boolean>;
@@ -402,6 +507,7 @@ export interface backendInterface {
     getActiveFlashSales(): Promise<Array<FlashSale>>;
     getAdminCoupons(): Promise<Array<AdminCoupon>>;
     getAdminNotifications(): Promise<Array<AdminNotification>>;
+    getAdminSession(): Promise<boolean>;
     getAdminStats(): Promise<AdminStats>;
     getAdminTasks(): Promise<Array<AdminTask>>;
     getAllActivities(): Promise<Array<UserActivity>>;
@@ -423,23 +529,27 @@ export interface backendInterface {
         avgOrderValue: bigint;
         netProfit: bigint;
     }>;
+    getAnalyticsSummary(): Promise<AnalyticsSummary>;
     getB2BInquiries(): Promise<Array<B2BInquiry>>;
     getBlogPosts(): Promise<Array<BlogPost>>;
     getCallerUserRole(): Promise<UserRole>;
     getCart(): Promise<Array<CartItem>>;
     getCoupons(): Promise<Array<Coupon>>;
     getCustomerProfile(userId: Principal): Promise<EnrichedCustomerProfile | null>;
+    getDashboardKPIs(): Promise<DashboardKPIs>;
     getExpenses(): Promise<Array<AdminExpense>>;
     getExpensesByCategory(): Promise<Array<[string, bigint]>>;
     getInventoryItems(): Promise<Array<InventoryItem>>;
+    getInventorySummary(): Promise<Array<InventorySummaryItem>>;
     getLowStockItems(): Promise<Array<InventoryItem>>;
     getNewsletterSubscribers(): Promise<Array<string>>;
     getOrder(id: bigint): Promise<Order | null>;
     getProduct(id: bigint): Promise<Product | null>;
     getProductReviews(productId: bigint): Promise<Array<Review>>;
     getProducts(filter: ProductFilter): Promise<Array<Product>>;
+    getRecentActivity(): Promise<Array<UserActivity>>;
     getRecommendations(condition: string): Promise<Array<Product>>;
-    getStoreSettings(): Promise<StoreSettings | null>;
+    getStoreSettings(): Promise<StoreSettings>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getTasks(): Promise<Array<AdminTask>>;
     getTeamMembers(): Promise<Array<TeamMember>>;
@@ -456,6 +566,7 @@ export interface backendInterface {
     listBundles(): Promise<Array<Product>>;
     listEmails(): Promise<Array<string>>;
     listFeaturedProducts(): Promise<Array<Product>>;
+    listOrders(): Promise<Array<Order>>;
     listProducts(filter: ProductFilter): Promise<Array<Product>>;
     listUserOrders(): Promise<Array<Order>>;
     logUserActivity(activityType: ActivityType, metadata: string): Promise<UserActivity>;
@@ -470,6 +581,7 @@ export interface backendInterface {
     removeTeamMember(id: string): Promise<boolean>;
     saveStoreSettings(settings: StoreSettings): Promise<StoreSettings>;
     seedProducts(): Promise<void>;
+    setAdminPassword(newPassword: string): Promise<AdminLoginResult>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     setUserRole(user: Principal, role: UserRole): Promise<void>;
     submitB2BInquiry(input: B2BInquiryInput): Promise<B2BInquiry>;
@@ -486,6 +598,7 @@ export interface backendInterface {
     updateExpense(id: string, expense: AdminExpense): Promise<AdminExpense | null>;
     updateInventory(productId: string, quantity: bigint, _type: string, _notes: string): Promise<InventoryItem | null>;
     updateInventoryStock(productId: string, delta: bigint, _reason: string): Promise<InventoryItem | null>;
+    updateOrderNotes(id: bigint, notes: string | null): Promise<boolean>;
     updateOrderStatus(id: bigint, status: OrderStatus): Promise<boolean>;
     updateProduct(id: bigint, input: CreateProductInput): Promise<boolean>;
     updateStoreSettings(settings: StoreSettings): Promise<StoreSettings>;
@@ -494,5 +607,5 @@ export interface backendInterface {
     updateUserProfile(input: UpdateUserInput): Promise<UserProfile | null>;
     upsertInventoryItem(item: InventoryItem): Promise<InventoryItem>;
     validateCoupon(code: string): Promise<CouponValidation>;
-    verifyAdminCredentials(username: string, password: string): Promise<boolean>;
+    verifyAdminCredentials(username: string, password: string): Promise<AdminLoginResult>;
 }

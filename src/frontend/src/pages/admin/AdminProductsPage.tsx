@@ -66,11 +66,13 @@ const EMPTY_FORM: CreateProductInput = {
   category: "Ayurvedic Powders",
   imageUrl: "",
   imageKey: "",
+  images: [],
   stock: 0,
   featured: false,
   bestseller: false,
   discount: 0,
   bundleIds: [],
+  status: "active",
 };
 
 export default function AdminProductsPage() {
@@ -111,11 +113,13 @@ export default function AdminProductsPage() {
       category: p.category,
       imageUrl: p.imageUrl,
       imageKey: p.imageKey,
+      images: p.images ?? [],
       stock: p.stock,
       featured: p.featured,
       bestseller: p.bestseller,
       discount: p.discount,
       bundleIds: p.bundleIds,
+      status: p.status ?? "active",
     });
     setShowModal(true);
   }

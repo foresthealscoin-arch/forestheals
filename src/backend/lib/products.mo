@@ -1,3 +1,4 @@
+import Debug "mo:core/Debug";
 import List "mo:core/List";
 import Map "mo:core/Map";
 import Types "../types/products";
@@ -17,9 +18,11 @@ module {
       name = input.name;
       description = input.description;
       price = input.price;
+      comparePrice = input.comparePrice;
       category = input.category;
       imageUrl = input.imageUrl;
       imageKey = input.imageKey;
+      images = input.images;
       stock = input.stock;
       ratings = 0.0;
       reviewCount = 0;
@@ -27,6 +30,7 @@ module {
       bestseller = input.bestseller;
       discount = input.discount;
       bundleIds = input.bundleIds;
+      status = input.status;
     };
     store.add(product);
     product;
@@ -46,14 +50,17 @@ module {
           name = input.name;
           description = input.description;
           price = input.price;
+          comparePrice = input.comparePrice;
           category = input.category;
           imageUrl = input.imageUrl;
           imageKey = input.imageKey;
+          images = input.images;
           stock = input.stock;
           featured = input.featured;
           bestseller = input.bestseller;
           discount = input.discount;
           bundleIds = input.bundleIds;
+          status = input.status;
         };
       } else { p };
     });
@@ -104,7 +111,18 @@ module {
         case null { true };
         case (?f) { p.featured == f };
       };
-      catMatch and minPriceMatch and maxPriceMatch and ratingMatch and searchMatch and featuredMatch;
+      let statusMatch = switch (filter.status) {
+        case null { true };
+        case (?s) {
+          switch (p.status, s) {
+            case (#active, #active) { true };
+            case (#inactive, #inactive) { true };
+            case (#draft, #draft) { true };
+            case (_, _) { false };
+          };
+        };
+      };
+      catMatch and minPriceMatch and maxPriceMatch and ratingMatch and searchMatch and featuredMatch and statusMatch;
     });
 
     let arr = results.toArray();
@@ -230,9 +248,11 @@ module {
         name = name;
         description = desc;
         price = price;
+        comparePrice = null;
         category = cat;
         imageUrl = img;
         imageKey = "";
+        images = [];
         stock = 100;
         ratings = 0.0;
         reviewCount = 0;
@@ -240,6 +260,7 @@ module {
         bestseller = false;
         discount = 0;
         bundleIds = bundles;
+        status = #active;
       };
       store.add(product);
       idx += 1;

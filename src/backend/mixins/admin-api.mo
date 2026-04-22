@@ -43,4 +43,20 @@ mixin (
       totalProducts = productStore.size();
     };
   };
+
+  /// List all orders with complete data (admin-only).
+  public query ({ caller }) func listOrders() : async [OrderTypes.Order] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can list all orders");
+    };
+    OrderLib.listAllOrders(orderStore);
+  };
+
+  /// List all products with complete schema (admin-only).
+  public query ({ caller }) func adminListProducts() : async [ProductTypes.Product] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can list all products via admin endpoint");
+    };
+    productStore.toArray();
+  };
 };

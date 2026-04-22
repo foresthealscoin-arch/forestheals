@@ -131,6 +131,14 @@ mixin (
     OrderLib.updateOrderStatus(orderStore, id, status);
   };
 
+  /// Update order notes (admin only)
+  public shared ({ caller }) func updateOrderNotes(id : Nat, notes : ?Text) : async Bool {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can update order notes");
+    };
+    OrderLib.updateOrderNotes(orderStore, id, notes);
+  };
+
   /// Cancel an order — user cancels own order or admin cancels any; restores stock
   public shared ({ caller }) func cancelOrder(id : Nat) : async Bool {
     switch (OrderLib.getOrder(orderStore, id)) {

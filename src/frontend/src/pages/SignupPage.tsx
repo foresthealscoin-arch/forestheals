@@ -1,26 +1,65 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Lock, Shield, Sparkles } from "lucide-react";
+import { Lock, Phone, Shield, Sparkles, User } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { createActor } from "../backend";
 import { useAuth } from "../hooks/useAuth";
 
 export default function SignupPage() {
-  const { login, loginStatus, isAuthenticated, isInitializing } = useAuth();
+  const { login, loginStatus, isAuthenticated, isInitializing, identity } =
+    useAuth();
   const navigate = useNavigate();
+  const { actor, isFetching } = useActor(createActor);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate({ to: "/dashboard" });
-    }
-  }, [isAuthenticated, navigate]);
+  const [phone, setPhone] = useState("");
+  const [profileSaved, setProfileSaved] = useState(false);
 
   const isLoading = loginStatus === "logging-in" || isInitializing;
+
+  // After authentication, register the user in the backend with real data
+  useEffect(() => {
+    if (isAuthenticated && actor && !isFetching && !profileSaved) {
+      const principalText = identity?.getPrincipal()?.toText() ?? "";
+      // Only register if we have at least a name or email
+      if (name.trim() || email.trim()) {
+        setProfileSaved(true);
+        actor
+          .registerUser({
+            name: name.trim() || principalText.slice(0, 8),
+            email: email.trim(),
+            phone: phone.trim(),
+          })
+          .then(() => {
+            toast.success("Account created! Welcome to Forestheals.");
+          })
+          .catch(() => {
+            // Registration may fail if user already exists — that's fine
+          })
+          .finally(() => {
+            void navigate({ to: "/dashboard" });
+          });
+      } else {
+        void navigate({ to: "/dashboard" });
+      }
+    }
+  }, [
+    isAuthenticated,
+    actor,
+    isFetching,
+    name,
+    email,
+    phone,
+    profileSaved,
+    identity,
+    navigate,
+  ]);
 
   const benefits = [
     { icon: Shield, text: "Secure Internet Identity authentication" },
@@ -94,7 +133,7 @@ export default function SignupPage() {
             home.
           </motion.p>
 
-          {/* Optional profile fields */}
+          {/* Profile fields */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -103,26 +142,29 @@ export default function SignupPage() {
           >
             <div className="space-y-1.5">
               <Label htmlFor="signup-name" className="text-sm font-medium">
-                Display Name{" "}
+                Full Name{" "}
                 <span className="text-muted-foreground font-normal">
-                  (optional)
+                  (recommended)
                 </span>
               </Label>
-              <Input
-                id="signup-name"
-                type="text"
-                placeholder="e.g. Priya Sharma"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="h-11 rounded-xl bg-background/50"
-                data-ocid="signup.name.input"
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="signup-name"
+                  type="text"
+                  placeholder="e.g. Priya Sharma"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-11 rounded-xl bg-background/50 pl-10"
+                  data-ocid="signup.name.input"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="signup-email" className="text-sm font-medium">
                 Email Address{" "}
                 <span className="text-muted-foreground font-normal">
-                  (optional, for notifications)
+                  (for order updates)
                 </span>
               </Label>
               <Input
@@ -134,6 +176,26 @@ export default function SignupPage() {
                 className="h-11 rounded-xl bg-background/50"
                 data-ocid="signup.email.input"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="signup-phone" className="text-sm font-medium">
+                Phone Number{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="signup-phone"
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-11 rounded-xl bg-background/50 pl-10"
+                  data-ocid="signup.phone.input"
+                />
+              </div>
             </div>
           </motion.div>
 
@@ -211,7 +273,6 @@ export default function SignupPage() {
             .
           </motion.p>
 
-          {/* Divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-border" />
             <span className="text-xs text-muted-foreground">or</span>

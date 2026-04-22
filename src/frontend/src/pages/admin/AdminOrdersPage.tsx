@@ -41,24 +41,27 @@ import { AdminSidebar } from "./AdminDashboardPage";
 const STATUS_OPTIONS: OrderStatus[] = [
   "pending",
   "confirmed",
+  "processing",
   "shipped",
-  "delivered",
+  "completed",
   "cancelled",
 ];
 
 const STATUS_ICONS: Record<OrderStatus, React.ElementType> = {
   pending: Clock,
   confirmed: CheckCircle2,
+  processing: Clock,
   shipped: Truck,
-  delivered: CheckCircle2,
+  completed: CheckCircle2,
   cancelled: XCircle,
 };
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Pending",
   confirmed: "Confirmed",
+  processing: "Processing",
   shipped: "Shipped",
-  delivered: "Delivered",
+  completed: "Completed",
   cancelled: "Cancelled",
 };
 

@@ -1,58 +1,53 @@
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ProductStatus } from "../backend";
 import { createActor } from "../backend";
-import { PRODUCTS_SEED_DATA } from "../lib/seedData";
 import type { CreateProductInput, Product, ProductFilter } from "../types";
+
+const STALE_5MIN = 5 * 60 * 1000;
 
 function useBackendActor() {
   return useActor(createActor);
 }
 
-export function useProducts(filter?: ProductFilter) {
-  const { actor, isFetching } = useBackendActor();
-
-  return useQuery({
-    queryKey: ["products", filter],
-    queryFn: async () => {
-      if (actor && !isFetching) {
-        try {
-          const backendFilter = {
-            featured: filter?.featured ?? undefined,
-            minRating: filter?.minRating,
-            sortBy: filter?.sortBy ? filter.sortBy : undefined,
-            maxPrice: filter?.maxPrice ? BigInt(filter.maxPrice) : undefined,
-            category: filter?.category ?? undefined,
-            minPrice: filter?.minPrice ? BigInt(filter.minPrice) : undefined,
-            searchQuery: filter?.search ?? undefined,
-          };
-          const raw = await actor.listProducts(backendFilter);
-          const products: Product[] = raw.map((p) => ({
-            id: Number(p.id),
-            name: p.name,
-            description: p.description,
-            price: Number(p.price),
-            category: p.category,
-            imageUrl: p.imageUrl,
-            imageKey: p.imageKey,
-            stock: Number(p.stock),
-            ratings: p.ratings,
-            reviewCount: Number(p.reviewCount),
-            featured: p.featured,
-            bestseller: p.bestseller,
-            discount: Number(p.discount),
-            bundleIds: p.bundleIds.map(Number),
-          }));
-          if (products.length > 0) return applyLocalFilters(products, filter);
-        } catch {
-          // fallback to seed
-        }
-      }
-      // Fallback: seed data with local filtering
-      return applyLocalFilters([...PRODUCTS_SEED_DATA], filter);
-    },
-    staleTime: 2 * 60 * 1000,
-    enabled: true,
-  });
+function mapProduct(p: {
+  id: bigint;
+  name: string;
+  description: string;
+  price: bigint;
+  comparePrice?: bigint;
+  category: string;
+  imageUrl: string;
+  imageKey: string;
+  images?: string[];
+  stock: bigint;
+  ratings: number;
+  reviewCount: bigint;
+  featured: boolean;
+  bestseller: boolean;
+  discount: bigint;
+  bundleIds: bigint[];
+  status?: unknown;
+}): Product {
+  return {
+    id: Number(p.id),
+    name: p.name,
+    description: p.description,
+    price: Number(p.price),
+    comparePrice: p.comparePrice != null ? Number(p.comparePrice) : undefined,
+    category: p.category,
+    imageUrl: p.imageUrl || "",
+    imageKey: p.imageKey,
+    images: p.images ?? [],
+    stock: Number(p.stock),
+    ratings: p.ratings,
+    reviewCount: Number(p.reviewCount),
+    featured: p.featured,
+    bestseller: p.bestseller,
+    discount: Number(p.discount),
+    bundleIds: p.bundleIds.map(Number),
+    status: String(p.status ?? "active") as "active" | "inactive" | "draft",
+  };
 }
 
 function applyLocalFilters(
@@ -100,195 +95,115 @@ function applyLocalFilters(
   return result;
 }
 
+export function useProducts(filter?: ProductFilter) {
+  const { actor, isFetching } = useBackendActor();
+
+  return useQuery<Product[]>({
+    queryKey: ["products", filter],
+    queryFn: async () => {
+      if (!actor || isFetching) return [];
+      const backendFilter = {
+        featured: filter?.featured ?? undefined,
+        minRating: filter?.minRating,
+        sortBy: filter?.sortBy ? filter.sortBy : undefined,
+        maxPrice: filter?.maxPrice ? BigInt(filter.maxPrice) : undefined,
+        category: filter?.category ?? undefined,
+        minPrice: filter?.minPrice ? BigInt(filter.minPrice) : undefined,
+        searchQuery: filter?.search ?? undefined,
+      };
+      const raw = await actor.listProducts(backendFilter);
+      // Backend returns empty array when no products — show empty state, no seed fallback
+      const products = raw.map(mapProduct);
+      return applyLocalFilters(products, filter);
+    },
+    staleTime: STALE_5MIN,
+    refetchOnWindowFocus: true,
+    retry: 2,
+    enabled: !!actor && !isFetching,
+  });
+}
+
 export function useFeaturedProducts() {
   const { actor, isFetching } = useBackendActor();
 
-  return useQuery({
+  return useQuery<Product[]>({
     queryKey: ["products", "featured"],
     queryFn: async () => {
-      if (actor && !isFetching) {
-        try {
-          const raw = await actor.listFeaturedProducts();
-          const products: Product[] = raw.map((p) => ({
-            id: Number(p.id),
-            name: p.name,
-            description: p.description,
-            price: Number(p.price),
-            category: p.category,
-            imageUrl: p.imageUrl,
-            imageKey: p.imageKey,
-            stock: Number(p.stock),
-            ratings: p.ratings,
-            reviewCount: Number(p.reviewCount),
-            featured: p.featured,
-            bestseller: p.bestseller,
-            discount: Number(p.discount),
-            bundleIds: p.bundleIds.map(Number),
-          }));
-          if (products.length > 0) return products;
-        } catch {
-          // fallback
-        }
-      }
-      return PRODUCTS_SEED_DATA.filter((p) => p.featured);
+      if (!actor || isFetching) return [];
+      const raw = await actor.listFeaturedProducts();
+      return raw.map(mapProduct);
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: STALE_5MIN,
+    refetchOnWindowFocus: true,
+    retry: 2,
+    enabled: !!actor && !isFetching,
   });
 }
 
 export function useBundles() {
   const { actor, isFetching } = useBackendActor();
 
-  return useQuery({
+  return useQuery<Product[]>({
     queryKey: ["products", "bundles"],
     queryFn: async () => {
-      if (actor && !isFetching) {
-        try {
-          const raw = await actor.listBundles();
-          if (raw.length > 0) {
-            return raw.map((p) => ({
-              id: Number(p.id),
-              name: p.name,
-              description: p.description,
-              price: Number(p.price),
-              category: p.category,
-              imageUrl: p.imageUrl,
-              imageKey: p.imageKey,
-              stock: Number(p.stock),
-              ratings: p.ratings,
-              reviewCount: Number(p.reviewCount),
-              featured: p.featured,
-              discount: Number(p.discount),
-              bundleIds: p.bundleIds.map(Number),
-            }));
-          }
-        } catch {
-          // fallback
-        }
-      }
-      return PRODUCTS_SEED_DATA.filter((p) => p.category === "Bundles");
+      if (!actor || isFetching) return [];
+      const raw = await actor.listBundles();
+      return raw.map(mapProduct);
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: STALE_5MIN,
+    refetchOnWindowFocus: true,
+    retry: 2,
+    enabled: !!actor && !isFetching,
   });
 }
 
 export function useProduct(id: number) {
   const { actor, isFetching } = useBackendActor();
 
-  return useQuery({
+  return useQuery<Product | null>({
     queryKey: ["product", id],
     queryFn: async () => {
-      if (actor && !isFetching && id > 0) {
-        try {
-          const raw = await actor.getProduct(BigInt(id));
-          if (raw) {
-            return {
-              id: Number(raw.id),
-              name: raw.name,
-              description: raw.description,
-              price: Number(raw.price),
-              category: raw.category,
-              imageUrl: raw.imageUrl,
-              imageKey: raw.imageKey,
-              stock: Number(raw.stock),
-              ratings: raw.ratings,
-              reviewCount: Number(raw.reviewCount),
-              featured: raw.featured,
-              discount: Number(raw.discount),
-              bundleIds: raw.bundleIds.map(Number),
-            } as Product;
-          }
-        } catch {
-          // fallback
-        }
-      }
-      return PRODUCTS_SEED_DATA.find((p) => p.id === id) ?? null;
+      if (!actor || isFetching || id <= 0) return null;
+      const raw = await actor.getProduct(BigInt(id));
+      if (!raw) return null;
+      return mapProduct(raw);
     },
-    enabled: id > 0,
-    staleTime: 2 * 60 * 1000,
+    enabled: id > 0 && !!actor && !isFetching,
+    staleTime: STALE_5MIN,
+    retry: 2,
   });
 }
 
 export function useProductCategories() {
-  return useQuery({
+  const { actor, isFetching } = useBackendActor();
+
+  return useQuery<string[]>({
     queryKey: ["product-categories"],
     queryFn: async () => {
-      const cats = new Set(PRODUCTS_SEED_DATA.map((p) => p.category));
+      if (!actor || isFetching) return [];
+      const raw = await actor.listProducts({});
+      const cats = new Set(raw.map((p) => p.category));
       return Array.from(cats);
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: STALE_5MIN,
+    retry: 2,
+    enabled: !!actor && !isFetching,
   });
 }
 
 export function useRecommendations(condition: string) {
   const { actor, isFetching } = useBackendActor();
 
-  return useQuery({
+  return useQuery<Product[]>({
     queryKey: ["recommendations", condition],
     queryFn: async () => {
-      if (actor && !isFetching && condition) {
-        try {
-          const raw = await actor.getRecommendations(condition);
-          if (raw.length > 0) {
-            return raw.map((p) => ({
-              id: Number(p.id),
-              name: p.name,
-              description: p.description,
-              price: Number(p.price),
-              category: p.category,
-              imageUrl: p.imageUrl,
-              imageKey: p.imageKey,
-              stock: Number(p.stock),
-              ratings: p.ratings,
-              reviewCount: Number(p.reviewCount),
-              featured: p.featured,
-              discount: Number(p.discount),
-              bundleIds: p.bundleIds.map(Number),
-            })) as Product[];
-          }
-        } catch {
-          // fallback
-        }
-      }
-      // Local fallback
-      const conditionMap: Record<string, string[]> = {
-        "hair-fall": [
-          "Brahmi Powder",
-          "Organic Amla Powder",
-          "Multani Mitti Powder",
-        ],
-        stress: ["Organic Ashwagandha", "Brahmi Powder", "Shatavari Powder"],
-        immunity: ["Organic Moringa Powder", "Triphala Churan", "Tulsi Powder"],
-        "skin-care": [
-          "Multani Mitti Powder",
-          "Organic Neem Powder",
-          "Organic Amla Powder",
-        ],
-        digestion: ["Triphala Churan", "Dry Ginger Powder", "Mulethi Powder"],
-        "joint-pain": [
-          "Dry Ginger Powder",
-          "Mulethi Powder",
-          "Organic Ashwagandha",
-        ],
-        diabetes: [
-          "Organic Moringa Powder",
-          "Cinnamon Powder",
-          "Organic Neem Powder",
-        ],
-        sleep: ["Organic Ashwagandha", "Brahmi Powder", "Shatavari Powder"],
-        "weight-loss": [
-          "Organic Moringa Powder",
-          "Triphala Churan",
-          "Chia Seeds",
-        ],
-        energy: ["Organic Ashwagandha", "Pumpkin Seeds", "Sunflower Seeds"],
-      };
-      const names = conditionMap[condition] ?? [];
-      return PRODUCTS_SEED_DATA.filter((p) =>
-        names.some((n) => p.name.includes(n.split(" ")[0])),
-      ).slice(0, 6);
+      if (!actor || isFetching || !condition) return [];
+      const raw = await actor.getRecommendations(condition);
+      return raw.map(mapProduct);
     },
-    enabled: !!condition,
+    enabled: !!condition && !!actor && !isFetching,
+    staleTime: STALE_5MIN,
+    retry: 2,
   });
 }
 
@@ -303,15 +218,68 @@ export function useCreateProduct() {
         name: input.name,
         description: input.description,
         price: BigInt(input.price),
+        comparePrice: undefined,
         category: input.category,
         imageUrl: input.imageUrl,
         imageKey: input.imageKey,
+        images: [],
         stock: BigInt(input.stock),
         featured: input.featured,
         bestseller: input.bestseller ?? false,
         discount: BigInt(input.discount ?? 0),
         bundleIds: (input.bundleIds ?? []).map(BigInt),
+        status: ProductStatus.active,
       });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
+export function useUpdateProduct() {
+  const qc = useQueryClient();
+  const { actor } = useBackendActor();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: number;
+      input: CreateProductInput;
+    }) => {
+      if (!actor) throw new Error("Backend not connected");
+      return actor.updateProduct(BigInt(id), {
+        name: input.name,
+        description: input.description,
+        price: BigInt(input.price),
+        comparePrice: undefined,
+        category: input.category,
+        imageUrl: input.imageUrl,
+        imageKey: input.imageKey,
+        images: [],
+        stock: BigInt(input.stock),
+        featured: input.featured,
+        bestseller: input.bestseller ?? false,
+        discount: BigInt(input.discount ?? 0),
+        bundleIds: (input.bundleIds ?? []).map(BigInt),
+        status: ProductStatus.active,
+      });
+    },
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({ queryKey: ["products"] });
+      void qc.invalidateQueries({ queryKey: ["product", vars.id] });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  const { actor } = useBackendActor();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      if (!actor) throw new Error("Backend not connected");
+      return actor.deleteProduct(BigInt(id));
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });

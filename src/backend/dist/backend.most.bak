@@ -1,0 +1,514 @@
+// Version: 3.0.0
+type ActivityType__682455919 =
+  {
+    #AddressAdded;
+    #B2BInquiry;
+    #CartAdd;
+    #CartRemove;
+    #CouponUsed;
+    #Login;
+    #Logout;
+    #NewsletterSignup;
+    #OrderPlaced;
+    #ProductView;
+    #ProfileUpdated;
+    #ReviewSubmitted;
+    #SearchQuery;
+    #WishlistAdd;
+    #WishlistRemove
+  };
+type Address__175912953 =
+  {
+    city : Text;
+    country : Text;
+    fullName : Text;
+    gstNumber : ?Text;
+    line1 : Text;
+    line2 : ?Text;
+    phone : Text;
+    pincode : Text;
+    state : Text
+  };
+type Address__274428118 =
+  {
+    city : Text;
+    country : Text;
+    isDefault : Bool;
+    postalCode : Text;
+    state : Text;
+    street : Text;
+    tag : Text
+  };
+type AdminCoupon__1031922060 =
+  {
+    active : Bool;
+    code : Text;
+    createdAt : Int;
+    description : Text;
+    discountType : Text;
+    discountValue : Nat;
+    expiresAt : ?Int;
+    id : Text;
+    maxUses : Nat;
+    minCartValue : Nat;
+    usedCount : Nat
+  };
+type AdminExpense__225329742 =
+  {
+    amount : Nat;
+    category : Text;
+    createdBy : Text;
+    date : Int;
+    description : Text;
+    id : Text
+  };
+type AdminNotification__722543256 =
+  {
+    createdAt : Int;
+    id : Text;
+    message : Text;
+    notificationType : Text;
+    read : Bool
+  };
+type AdminTask__167979016 =
+  {
+    assignedTo : ?Text;
+    category : Text;
+    completed : Bool;
+    createdAt : Int;
+    description : Text;
+    dueDate : ?Int;
+    id : Text;
+    notes : Text;
+    priority : Text;
+    title : Text
+  };
+type B2BInquiry__570922934 =
+  {
+    companyName : Text;
+    contactName : Text;
+    createdAt : Int;
+    email : Text;
+    id : Nat;
+    message : Text;
+    phone : Text;
+    productInterest : Text;
+    quantity : Text
+  };
+type BlogPost__742465984 =
+  {
+    content : Text;
+    createdAt : Int;
+    excerpt : Text;
+    featuredImage : Text;
+    id : Text;
+    metaDescription : Text;
+    metaTitle : Text;
+    publishDate : ?Int;
+    slug : Text;
+    status : Text;
+    tags : [Text];
+    title : Text;
+    updatedAt : Int
+  };
+type CartItem__858515331 = {price : Nat; productId : Nat; quantity : Nat};
+type Category__8224233 = Text;
+type Coupon__243002030 =
+  {
+    active : Bool;
+    code : Text;
+    discountPercent : Nat;
+    expiryDate : Int;
+    maxUses : Nat;
+    usedCount : Nat
+  };
+type Data__159895909<T> = {var count : Nat__490723111; elements : [var ?T]};
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type FlashSale__326679421 =
+  {
+    active : Bool;
+    discountPercent : Nat;
+    endTime : Int;
+    id : Nat;
+    productId : Nat;
+    startTime : Int
+  };
+type Internal__667636161<T> =
+  {children : [var ?Node__92254746<T>]; data : Data__159895909<T>};
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type InventoryItem__684123709 =
+  {
+    batchNumber : Text;
+    currentStock : Nat;
+    damagedStock : Nat;
+    expiryDate : ?Int;
+    incomingStock : Nat;
+    lastUpdated : Int;
+    lowStockThreshold : Nat;
+    productId : Text;
+    purchaseCost : Nat;
+    reservedStock : Nat;
+    supplierContact : Text;
+    supplierName : Text
+  };
+type Leaf__520550824<T> = {data : Data__159895909<T>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type List__415060402<T> = List__790383201<T>;
+type List__790383201<T> =
+  {
+    var blockIndex : Nat__490723111;
+    var blocks : [var [var ?T]];
+    var elementIndex : Nat__490723111
+  };
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Node__92254746<T> =
+  {#internal : Internal__667636161<T>; #leaf : Leaf__520550824<T>};
+type OldStoreSettings__577895707 =
+  {
+    contactEmail : Text;
+    contactPhone : Text;
+    currency : Text;
+    facebookUrl : Text;
+    freeShippingThreshold : Nat;
+    gstNumber : Text;
+    instagramUrl : Text;
+    storeName : Text;
+    timezone : Text;
+    whatsappNumber : Text
+  };
+type OrderStatus__272730104 =
+  {#cancelled; #delivered; #pending; #processing; #shipped};
+type Order__141779993 =
+  {
+    address : Address__175912953;
+    couponCode : ?Text;
+    createdAt : Int;
+    discountAmount : Nat;
+    id : Nat;
+    items : [CartItem__858515331];
+    paymentMethod : PaymentMethod__972042942;
+    status : OrderStatus__272730104;
+    stripePaymentId : ?Text;
+    totalAmount : Nat;
+    updatedAt : Int;
+    userId : Principal
+  };
+type PaymentMethod__972042942 = {#cod; #stripe};
+type Product__750902660 =
+  {
+    bestseller : Bool;
+    bundleIds : [Nat];
+    category : Category__8224233;
+    description : Text;
+    discount : Nat;
+    featured : Bool;
+    id : Nat;
+    imageKey : Text;
+    imageUrl : Text;
+    name : Text;
+    price : Nat;
+    ratings : Float;
+    reviewCount : Nat;
+    stock : Nat
+  };
+type Review__513345496 =
+  {
+    approved : Bool;
+    createdAt : Int;
+    id : Nat;
+    productId : Nat;
+    rating : Nat;
+    text : Text;
+    userId : Principal;
+    verified : Bool
+  };
+type Set__532252804<T> = Set__710576254<T>;
+type Set__710576254<T> =
+  {var root : Node__92254746<T>; var size : Nat__490723111};
+type StoreSettings__51598272 =
+  {
+    contactEmail : Text;
+    contactPhone : Text;
+    currency : Text;
+    facebookUrl : Text;
+    faviconUrl : Text;
+    freeShippingThreshold : Nat;
+    gstNumber : Text;
+    gstRate : Nat;
+    instagramUrl : Text;
+    logoUrl : Text;
+    seoDescription : Text;
+    seoTitle : Text;
+    shippingDefault : Nat;
+    storeName : Text;
+    timezone : Text;
+    whatsappNumber : Text
+  };
+type StripeConfiguration__96897619 =
+  {allowedCountries : [Text]; secretKey : Text};
+type TeamMember__818543421 =
+  {
+    active : Bool;
+    createdAt : Int;
+    email : Text;
+    id : Text;
+    name : Text;
+    permissions : [Text];
+    role : Text
+  };
+type UserActivity__862856431 =
+  {
+    activityType : ActivityType__682455919;
+    id : Nat;
+    metadata : Text;
+    timestamp : Int;
+    userId : Principal
+  };
+type UserProfile__277265826 =
+  {
+    addresses : [Address__274428118];
+    createdAt : Int;
+    email : Text;
+    id : Principal;
+    name : Text;
+    phone : Text
+  };
+type UserRole__1054455867 = {#admin; #guest; #user};
+actor ({
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1054455867>
+    };
+  stable activityStore :
+    {
+      var root : Node__46230540<Nat, UserActivity__862856431>;
+      var size : Nat__490723111
+    };
+  stable adminCouponStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminCoupon__1031922060]];
+      var elementIndex : Nat__490723111
+    };
+  stable adminCredState : {var passwordHash : Text};
+  stable blogPostStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?BlogPost__742465984]];
+      var elementIndex : Nat__490723111
+    };
+  stable cartStore :
+    {
+      var root :
+        Node__46230540<Principal, List__415060402<CartItem__858515331>>;
+      var size : Nat__490723111
+    };
+  stable couponStore :
+    {
+      var root : Node__46230540<Text, Coupon__243002030>;
+      var size : Nat__490723111
+    };
+  stable emailStore :
+    {var root : Node__92254746<Text>; var size : Nat__490723111};
+  stable expenseStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminExpense__225329742]];
+      var elementIndex : Nat__490723111
+    };
+  stable flashSaleStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?FlashSale__326679421]];
+      var elementIndex : Nat__490723111
+    };
+  stable inquiryStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?B2BInquiry__570922934]];
+      var elementIndex : Nat__490723111
+    };
+  stable inventoryStore :
+    {
+      var root : Node__46230540<Text, InventoryItem__684123709>;
+      var size : Nat__490723111
+    };
+  stable var nextActivityId : {var value : Nat};
+  stable var nextFlashSaleId : {var value : Nat};
+  stable var nextInquiryId : {var value : Nat};
+  stable var nextOrderId : {var value : Nat};
+  stable var nextProductId : {var value : Nat};
+  stable var nextReviewId : {var value : Nat};
+  stable notificationStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminNotification__722543256]];
+      var elementIndex : Nat__490723111
+    };
+  stable orderStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Order__141779993]];
+      var elementIndex : Nat__490723111
+    };
+  stable productStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Product__750902660]];
+      var elementIndex : Nat__490723111
+    };
+  stable reviewStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Review__513345496]];
+      var elementIndex : Nat__490723111
+    };
+  in var storeSettingsState : {var settings : ?OldStoreSettings__577895707};
+  stable var stripeConfiguration : ?StripeConfiguration__96897619;
+  stable taskStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminTask__167979016]];
+      var elementIndex : Nat__490723111
+    };
+  stable teamMemberStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?TeamMember__818543421]];
+      var elementIndex : Nat__490723111
+    };
+  stable userStore :
+    {
+      var root : Node__46230540<Principal, UserProfile__277265826>;
+      var size : Nat__490723111
+    };
+  stable wishlistStore :
+    {
+      var root : Node__46230540<Principal, Set__532252804<Nat>>;
+      var size : Nat__490723111
+    }
+}, {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1054455867>
+    };
+  stable activityStore :
+    {
+      var root : Node__46230540<Nat, UserActivity__862856431>;
+      var size : Nat__490723111
+    };
+  stable adminCouponStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminCoupon__1031922060]];
+      var elementIndex : Nat__490723111
+    };
+  stable adminCredState : {var passwordHash : Text};
+  stable blogPostStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?BlogPost__742465984]];
+      var elementIndex : Nat__490723111
+    };
+  stable cartStore :
+    {
+      var root :
+        Node__46230540<Principal, List__415060402<CartItem__858515331>>;
+      var size : Nat__490723111
+    };
+  stable couponStore :
+    {
+      var root : Node__46230540<Text, Coupon__243002030>;
+      var size : Nat__490723111
+    };
+  stable emailStore :
+    {var root : Node__92254746<Text>; var size : Nat__490723111};
+  stable expenseStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminExpense__225329742]];
+      var elementIndex : Nat__490723111
+    };
+  stable flashSaleStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?FlashSale__326679421]];
+      var elementIndex : Nat__490723111
+    };
+  stable inquiryStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?B2BInquiry__570922934]];
+      var elementIndex : Nat__490723111
+    };
+  stable inventoryStore :
+    {
+      var root : Node__46230540<Text, InventoryItem__684123709>;
+      var size : Nat__490723111
+    };
+  stable var nextActivityId : {var value : Nat};
+  stable var nextFlashSaleId : {var value : Nat};
+  stable var nextInquiryId : {var value : Nat};
+  stable var nextOrderId : {var value : Nat};
+  stable var nextProductId : {var value : Nat};
+  stable var nextReviewId : {var value : Nat};
+  stable notificationStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminNotification__722543256]];
+      var elementIndex : Nat__490723111
+    };
+  stable orderStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Order__141779993]];
+      var elementIndex : Nat__490723111
+    };
+  stable productStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Product__750902660]];
+      var elementIndex : Nat__490723111
+    };
+  stable reviewStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Review__513345496]];
+      var elementIndex : Nat__490723111
+    };
+  stable var storeSettingsState : {var settings : ?StoreSettings__51598272};
+  stable var stripeConfiguration : ?StripeConfiguration__96897619;
+  stable taskStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?AdminTask__167979016]];
+      var elementIndex : Nat__490723111
+    };
+  stable teamMemberStore :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?TeamMember__818543421]];
+      var elementIndex : Nat__490723111
+    };
+  stable userStore :
+    {
+      var root : Node__46230540<Principal, UserProfile__277265826>;
+      var size : Nat__490723111
+    };
+  stable wishlistStore :
+    {
+      var root : Node__46230540<Principal, Set__532252804<Nat>>;
+      var size : Nat__490723111
+    }
+}) ;

@@ -31,13 +31,16 @@ export interface AddReviewInput {
   'rating' : bigint,
 }
 export interface Address {
+  'id' : string,
   'tag' : string,
   'street' : string,
   'country' : string,
   'city' : string,
-  'postalCode' : string,
+  'fullName' : string,
   'state' : string,
   'isDefault' : boolean,
+  'phone' : string,
+  'pincode' : string,
 }
 export interface Address__1 {
   'country' : string,
@@ -71,6 +74,8 @@ export interface AdminExpense {
   'category' : string,
   'amount' : bigint,
 }
+export type AdminLoginResult = { 'ok' : boolean } |
+  { 'err' : string };
 export interface AdminNotification {
   'id' : string,
   'notificationType' : string,
@@ -94,6 +99,18 @@ export interface AdminTask {
   'notes' : string,
   'category' : string,
   'priority' : string,
+}
+export interface AnalyticsSummary {
+  'revenueByDay' : Array<DayRevenue>,
+  'totalExpenses' : bigint,
+  'orderCount' : bigint,
+  'paymentBreakdown' : PaymentBreakdown,
+  'revenueByMonth' : Array<MonthRevenue>,
+  'topProducts' : Array<TopProduct>,
+  'customerCount' : bigint,
+  'totalRevenue' : bigint,
+  'avgOrderValue' : bigint,
+  'netProfit' : bigint,
 }
 export interface B2BInquiry {
   'id' : bigint,
@@ -132,6 +149,7 @@ export interface BlogPost {
 }
 export interface CartItem {
   'productId' : bigint,
+  'productType' : [] | [string],
   'quantity' : bigint,
   'price' : bigint,
 }
@@ -164,15 +182,20 @@ export interface CreateFlashSaleInput {
 export interface CreateOrderInput {
   'couponCode' : [] | [string],
   'paymentMethod' : PaymentMethod,
+  'userId' : [] | [string],
+  'addressId' : [] | [string],
   'address' : Address__1,
+  'notes' : [] | [string],
   'stripePaymentId' : [] | [string],
   'items' : Array<CartItem>,
 }
 export interface CreateProductInput {
+  'status' : ProductStatus,
   'featured' : boolean,
   'bundleIds' : Array<bigint>,
   'name' : string,
   'description' : string,
+  'comparePrice' : [] | [bigint],
   'stock' : bigint,
   'imageKey' : string,
   'imageUrl' : string,
@@ -180,16 +203,42 @@ export interface CreateProductInput {
   'category' : Category,
   'price' : bigint,
   'bestseller' : boolean,
+  'images' : Array<string>,
+}
+export interface DashboardKPIs {
+  'totalProducts' : bigint,
+  'weekOrders' : bigint,
+  'totalOrders' : bigint,
+  'pendingOrderCount' : bigint,
+  'monthOrders' : bigint,
+  'monthRevenue' : bigint,
+  'lowStockCount' : bigint,
+  'pendingReviewCount' : bigint,
+  'todayRevenue' : bigint,
+  'totalRevenue' : bigint,
+  'totalCustomers' : bigint,
+  'weekRevenue' : bigint,
+  'todayOrders' : bigint,
+}
+export interface DayRevenue {
+  'revenue' : bigint,
+  'date' : string,
+  'orders' : bigint,
 }
 export interface EnrichedCustomerProfile {
   'id' : Principal,
   'status' : string,
   'totalOrders' : bigint,
+  'country' : string,
+  'city' : string,
   'name' : string,
   'createdAt' : bigint,
   'email' : string,
+  'state' : string,
   'totalSpend' : bigint,
+  'addresses' : Array<Address>,
   'phone' : string,
+  'pincode' : string,
   'lastLogin' : [] | [bigint],
   'activityCount' : bigint,
 }
@@ -215,6 +264,19 @@ export interface InventoryItem {
   'currentStock' : bigint,
   'damagedStock' : bigint,
 }
+export interface InventorySummaryItem {
+  'outOfStockFlag' : boolean,
+  'productId' : bigint,
+  'productName' : string,
+  'reservedStock' : bigint,
+  'availableStock' : bigint,
+  'lowStockFlag' : boolean,
+}
+export interface MonthRevenue {
+  'month' : string,
+  'revenue' : bigint,
+  'orders' : bigint,
+}
 export interface Order {
   'id' : bigint,
   'status' : OrderStatus,
@@ -226,23 +288,33 @@ export interface Order {
   'updatedAt' : bigint,
   'totalAmount' : bigint,
   'address' : Address__1,
+  'notes' : [] | [string],
   'stripePaymentId' : [] | [string],
   'items' : Array<CartItem>,
 }
 export type OrderStatus = { 'shipped' : null } |
   { 'cancelled' : null } |
   { 'pending' : null } |
-  { 'delivered' : null } |
+  { 'completed' : null } |
+  { 'confirmed' : null } |
   { 'processing' : null };
+export interface PaymentBreakdown {
+  'onlineCount' : bigint,
+  'onlineAmount' : bigint,
+  'codAmount' : bigint,
+  'codCount' : bigint,
+}
 export type PaymentMethod = { 'cod' : null } |
   { 'stripe' : null };
 export interface Product {
   'id' : bigint,
+  'status' : ProductStatus,
   'featured' : boolean,
   'bundleIds' : Array<bigint>,
   'name' : string,
   'ratings' : number,
   'description' : string,
+  'comparePrice' : [] | [bigint],
   'stock' : bigint,
   'imageKey' : string,
   'imageUrl' : string,
@@ -251,8 +323,10 @@ export interface Product {
   'price' : bigint,
   'bestseller' : boolean,
   'reviewCount' : bigint,
+  'images' : Array<string>,
 }
 export interface ProductFilter {
+  'status' : [] | [ProductStatus],
   'featured' : [] | [boolean],
   'minRating' : [] | [number],
   'sortBy' : [] | [string],
@@ -261,6 +335,9 @@ export interface ProductFilter {
   'minPrice' : [] | [bigint],
   'searchQuery' : [] | [string],
 }
+export type ProductStatus = { 'active' : null } |
+  { 'inactive' : null } |
+  { 'draft' : null };
 export interface RegisterUserInput {
   'name' : string,
   'email' : string,
@@ -285,13 +362,19 @@ export interface ShoppingItem {
 }
 export interface StoreSettings {
   'timezone' : string,
+  'seoTitle' : string,
   'gstNumber' : string,
   'freeShippingThreshold' : bigint,
   'instagramUrl' : string,
   'whatsappNumber' : string,
+  'logoUrl' : string,
   'currency' : string,
   'storeName' : string,
   'contactEmail' : string,
+  'shippingDefault' : bigint,
+  'gstRate' : bigint,
+  'seoDescription' : string,
+  'faviconUrl' : string,
   'facebookUrl' : string,
   'contactPhone' : string,
 }
@@ -312,6 +395,11 @@ export interface TeamMember {
   'role' : string,
   'email' : string,
 }
+export interface TopProduct {
+  'revenue' : bigint,
+  'productId' : bigint,
+  'unitsSold' : bigint,
+}
 export interface TransformationInput {
   'context' : Uint8Array,
   'response' : http_request_result,
@@ -322,10 +410,14 @@ export interface TransformationOutput {
   'headers' : Array<http_header>,
 }
 export interface UpdateUserInput {
+  'country' : string,
+  'city' : string,
   'name' : string,
   'email' : string,
+  'state' : string,
   'addresses' : Array<Address>,
   'phone' : string,
+  'pincode' : string,
 }
 export interface UserActivity {
   'id' : bigint,
@@ -336,11 +428,16 @@ export interface UserActivity {
 }
 export interface UserProfile {
   'id' : Principal,
+  'country' : string,
+  'city' : string,
   'name' : string,
   'createdAt' : bigint,
   'email' : string,
+  'state' : string,
   'addresses' : Array<Address>,
   'phone' : string,
+  'pincode' : string,
+  'phoneVerified' : boolean,
 }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
@@ -358,6 +455,7 @@ export interface _SERVICE {
   'addTeamMember' : ActorMethod<[TeamMember], TeamMember>,
   'addToCart' : ActorMethod<[bigint, bigint, bigint], undefined>,
   'addToWishlist' : ActorMethod<[bigint], undefined>,
+  'adminListProducts' : ActorMethod<[], Array<Product>>,
   'approveReview' : ActorMethod<[bigint], boolean>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'cancelOrder' : ActorMethod<[bigint], boolean>,
@@ -390,6 +488,7 @@ export interface _SERVICE {
   'getActiveFlashSales' : ActorMethod<[], Array<FlashSale>>,
   'getAdminCoupons' : ActorMethod<[], Array<AdminCoupon>>,
   'getAdminNotifications' : ActorMethod<[], Array<AdminNotification>>,
+  'getAdminSession' : ActorMethod<[], boolean>,
   'getAdminStats' : ActorMethod<[], AdminStats>,
   'getAdminTasks' : ActorMethod<[], Array<AdminTask>>,
   'getAllActivities' : ActorMethod<[], Array<UserActivity>>,
@@ -414,6 +513,7 @@ export interface _SERVICE {
       'netProfit' : bigint,
     }
   >,
+  'getAnalyticsSummary' : ActorMethod<[], AnalyticsSummary>,
   'getB2BInquiries' : ActorMethod<[], Array<B2BInquiry>>,
   'getBlogPosts' : ActorMethod<[], Array<BlogPost>>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
@@ -423,17 +523,20 @@ export interface _SERVICE {
     [Principal],
     [] | [EnrichedCustomerProfile]
   >,
+  'getDashboardKPIs' : ActorMethod<[], DashboardKPIs>,
   'getExpenses' : ActorMethod<[], Array<AdminExpense>>,
   'getExpensesByCategory' : ActorMethod<[], Array<[string, bigint]>>,
   'getInventoryItems' : ActorMethod<[], Array<InventoryItem>>,
+  'getInventorySummary' : ActorMethod<[], Array<InventorySummaryItem>>,
   'getLowStockItems' : ActorMethod<[], Array<InventoryItem>>,
   'getNewsletterSubscribers' : ActorMethod<[], Array<string>>,
   'getOrder' : ActorMethod<[bigint], [] | [Order]>,
   'getProduct' : ActorMethod<[bigint], [] | [Product]>,
   'getProductReviews' : ActorMethod<[bigint], Array<Review>>,
   'getProducts' : ActorMethod<[ProductFilter], Array<Product>>,
+  'getRecentActivity' : ActorMethod<[], Array<UserActivity>>,
   'getRecommendations' : ActorMethod<[string], Array<Product>>,
-  'getStoreSettings' : ActorMethod<[], [] | [StoreSettings]>,
+  'getStoreSettings' : ActorMethod<[], StoreSettings>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getTasks' : ActorMethod<[], Array<AdminTask>>,
   'getTeamMembers' : ActorMethod<[], Array<TeamMember>>,
@@ -450,6 +553,7 @@ export interface _SERVICE {
   'listBundles' : ActorMethod<[], Array<Product>>,
   'listEmails' : ActorMethod<[], Array<string>>,
   'listFeaturedProducts' : ActorMethod<[], Array<Product>>,
+  'listOrders' : ActorMethod<[], Array<Order>>,
   'listProducts' : ActorMethod<[ProductFilter], Array<Product>>,
   'listUserOrders' : ActorMethod<[], Array<Order>>,
   'logUserActivity' : ActorMethod<[ActivityType, string], UserActivity>,
@@ -464,6 +568,7 @@ export interface _SERVICE {
   'removeTeamMember' : ActorMethod<[string], boolean>,
   'saveStoreSettings' : ActorMethod<[StoreSettings], StoreSettings>,
   'seedProducts' : ActorMethod<[], undefined>,
+  'setAdminPassword' : ActorMethod<[string], AdminLoginResult>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'setUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'submitB2BInquiry' : ActorMethod<[B2BInquiryInput], B2BInquiry>,
@@ -486,6 +591,7 @@ export interface _SERVICE {
     [string, bigint, string],
     [] | [InventoryItem]
   >,
+  'updateOrderNotes' : ActorMethod<[bigint, [] | [string]], boolean>,
   'updateOrderStatus' : ActorMethod<[bigint, OrderStatus], boolean>,
   'updateProduct' : ActorMethod<[bigint, CreateProductInput], boolean>,
   'updateStoreSettings' : ActorMethod<[StoreSettings], StoreSettings>,
@@ -494,7 +600,7 @@ export interface _SERVICE {
   'updateUserProfile' : ActorMethod<[UpdateUserInput], [] | [UserProfile]>,
   'upsertInventoryItem' : ActorMethod<[InventoryItem], InventoryItem>,
   'validateCoupon' : ActorMethod<[string], CouponValidation>,
-  'verifyAdminCredentials' : ActorMethod<[string, string], boolean>,
+  'verifyAdminCredentials' : ActorMethod<[string, string], AdminLoginResult>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

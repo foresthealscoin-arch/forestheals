@@ -1,11 +1,15 @@
+export type ProductStatus = "active" | "inactive" | "draft";
+
 export interface Product {
   id: number;
   name: string;
   description: string;
   price: number;
+  comparePrice?: number;
   category: string;
   imageUrl: string;
   imageKey: string;
+  images: string[];
   stock: number;
   ratings: number;
   reviewCount: number;
@@ -13,12 +17,14 @@ export interface Product {
   bestseller: boolean;
   discount: number;
   bundleIds: number[];
+  status: ProductStatus;
 }
 
 export interface CartItem {
   productId: number;
   quantity: number;
   price: number;
+  productType?: string;
 }
 
 export interface CartItemWithProduct extends CartItem {
@@ -28,12 +34,15 @@ export interface CartItemWithProduct extends CartItem {
 export type OrderStatus =
   | "pending"
   | "confirmed"
+  | "processing"
   | "shipped"
-  | "delivered"
+  | "completed"
   | "cancelled";
+
 export type PaymentMethod = "stripe" | "cod";
 
 export interface Address {
+  id?: string;
   fullName: string;
   phone: string;
   line1: string;
@@ -43,6 +52,7 @@ export interface Address {
   pincode: string;
   country: string;
   gstNumber?: string;
+  isDefault?: boolean;
 }
 
 export interface Order {
@@ -58,6 +68,7 @@ export interface Order {
   stripePaymentId?: string;
   couponCode?: string;
   discountAmount: number;
+  notes?: string;
 }
 
 export interface Review {
@@ -147,6 +158,7 @@ export interface ProductFilter {
   search?: string;
   sortBy?: "price-asc" | "price-desc" | "rating" | "newest" | "popular";
   featured?: boolean;
+  status?: ProductStatus;
 }
 
 export interface CreateOrderInput {
@@ -157,20 +169,24 @@ export interface CreateOrderInput {
   couponCode?: string;
   discountAmount: number;
   stripePaymentId?: string;
+  notes?: string;
 }
 
 export interface CreateProductInput {
   name: string;
   description: string;
   price: number;
+  comparePrice?: number;
   category: string;
   imageUrl: string;
   imageKey: string;
+  images: string[];
   stock: number;
   featured: boolean;
   bestseller: boolean;
   discount: number;
   bundleIds: number[];
+  status: ProductStatus;
 }
 
 export interface AddReviewInput {
@@ -183,4 +199,34 @@ export interface User {
   principal: string;
   isAdmin: boolean;
   loginStatus: "logged-in" | "logged-out" | "initializing";
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  phoneVerified: boolean;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  addresses: Address[];
+  createdAt: number;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featuredImage: string;
+  tags: string[];
+  metaTitle: string;
+  metaDescription: string;
+  status: string;
+  createdAt: number;
+  updatedAt: number;
+  publishDate?: number;
 }

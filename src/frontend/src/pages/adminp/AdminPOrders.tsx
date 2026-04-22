@@ -13,8 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@caffeineai/core-infrastructure";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertCircle,
   CheckCircle2,
   Eye,
   Package,
@@ -23,54 +24,51 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { OrderStatus, createActor } from "../../backend";
-import { useAllOrders } from "../../hooks/useOrders";
+import {
+  useAdminOrders,
+  useUpdateOrderNotes,
+  useUpdateOrderStatus,
+} from "../../hooks/useAdminData";
 import { formatDate, formatPrice } from "../../lib/formatters";
-import { PRODUCTS_SEED_DATA } from "../../lib/seedData";
-import type { Order } from "../../types";
+import type { OrderView } from "../../services/orderService";
 import { AdminPLayout } from "./AdminPLayout";
 
 const STATUSES = [
   "pending",
   "confirmed",
+  "processing",
   "shipped",
-  "delivered",
+  "completed",
   "cancelled",
 ] as const;
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
   confirmed: "Confirmed",
+  processing: "Processing",
   shipped: "Shipped",
-  delivered: "Delivered",
+  completed: "Completed",
   cancelled: "Cancelled",
 };
 
 const STATUS_COLOR: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   confirmed: "bg-blue-100 text-blue-800",
+  processing: "bg-purple-100 text-purple-800",
   shipped: "bg-cyan-100 text-cyan-800",
-  delivered: "bg-green-100 text-green-800",
+  completed: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
 };
 
-function mapToBackendStatus(status: string): OrderStatus {
-  const map: Record<string, OrderStatus> = {
-    pending: OrderStatus.pending,
-    confirmed: OrderStatus.processing,
-    shipped: OrderStatus.shipped,
-    delivered: OrderStatus.delivered,
-    cancelled: OrderStatus.cancelled,
-  };
-  return map[status] ?? OrderStatus.pending;
-}
-
 export default function AdminPOrders() {
-  const { data: orders, isLoading, refetch } = useAllOrders();
-  const { actor, isFetching } = useActor(createActor);
+  const { data: orders, isLoading, isError, refetch } = useAdminOrders();
+  const updateStatus = useUpdateOrderStatus();
+  const updateNotes = useUpdateOrderNotes();
+
   const [filter, setFilter] = useState("all");
-  const [selected, setSelected] = useState<Order | null>(null);
-  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<OrderView | null>(null);
+  const [notesEdit, setNotesEdit] = useState<string>("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const filtered = !orders
     ? []
@@ -78,25 +76,62 @@ export default function AdminPOrders() {
       ? orders
       : orders.filter((o) => o.status === filter);
 
-  async function changeStatus(order: Order, newStatus: string) {
-    setUpdatingId(order.id);
+  function openDetail(order: OrderView) {
+    setSelected(order);
+    setNotesEdit(order.notes ?? "");
+  }
+
+  async function changeStatus(order: OrderView, newStatus: string) {
     try {
-      if (actor && !isFetching) {
-        await actor.updateOrderStatus(
-          BigInt(order.id),
-          mapToBackendStatus(newStatus),
-        );
-      }
+      await updateStatus.mutateAsync({ id: order.id, status: newStatus });
       toast.success(
-        `Order #${order.id} marked as ${STATUS_LABELS[newStatus] ?? newStatus}`,
+        `Order #${order.id} → ${STATUS_LABELS[newStatus] ?? newStatus}`,
       );
-      void refetch();
-    } catch (err) {
-      console.error("Failed to update order status:", err);
+      if (selected?.id === order.id) {
+        setSelected({ ...selected, status: newStatus });
+      }
+    } catch {
       toast.error("Failed to update status. Please try again.");
-    } finally {
-      setUpdatingId(null);
     }
+  }
+
+  async function saveNotes() {
+    if (!selected) return;
+    setSavingNotes(true);
+    try {
+      await updateNotes.mutateAsync({
+        id: selected.id,
+        notes: notesEdit.trim() || null,
+      });
+      setSelected({ ...selected, notes: notesEdit.trim() || undefined });
+      toast.success("Notes saved");
+    } catch {
+      toast.error("Failed to save notes");
+    } finally {
+      setSavingNotes(false);
+    }
+  }
+
+  if (isError) {
+    return (
+      <AdminPLayout title="Orders" subtitle="Manage customer orders">
+        <div
+          className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center"
+          data-ocid="adminp.orders.error_state"
+        >
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-700 font-medium">Failed to load orders</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry
+          </Button>
+        </div>
+      </AdminPLayout>
+    );
   }
 
   return (
@@ -141,8 +176,8 @@ export default function AdminPOrders() {
 
       {isLoading ? (
         <div className="space-y-2" data-ocid="adminp.orders.loading_state">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-xl" />
+          {["a", "b", "c", "d"].map((k) => (
+            <Skeleton key={k} className="h-14 w-full rounded-xl" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -164,9 +199,12 @@ export default function AdminPOrders() {
             <table className="w-full text-sm" data-ocid="adminp.orders.table">
               <thead>
                 <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
-                  <th className="text-left px-5 py-3 font-medium">Order ID</th>
+                  <th className="text-left px-5 py-3 font-medium">Order</th>
                   <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
                     Customer
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">
+                    Address
                   </th>
                   <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">
                     Date
@@ -186,12 +224,28 @@ export default function AdminPOrders() {
                     data-ocid={`adminp.orders.item.${i + 1}`}
                     className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
                   >
-                    <td className="px-5 py-3 font-mono text-xs text-gray-500">
-                      #{order.id}
+                    <td className="px-5 py-3">
+                      <p className="font-mono text-xs text-gray-500">
+                        #{order.id}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {order.items.length} item
+                        {order.items.length !== 1 ? "s" : ""}
+                      </p>
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell font-medium text-gray-800 text-xs">
-                      {order.address.fullName ||
-                        `${order.userId.slice(0, 14)}…`}
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <p className="font-medium text-gray-800 text-xs">
+                        {order.address.fullName || "—"}
+                      </p>
+                      <p className="text-gray-400 text-xs">
+                        {order.address.phone}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell text-gray-500 text-xs">
+                      <p>
+                        {order.address.city}, {order.address.state}
+                      </p>
+                      <p>{order.address.pincode}</p>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell text-gray-500 text-xs">
                       {formatDate(order.createdAt)}
@@ -201,11 +255,7 @@ export default function AdminPOrders() {
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          order.paymentMethod === "stripe"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${order.paymentMethod === "stripe" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
                       >
                         {order.paymentMethod === "stripe" ? "Online" : "COD"}
                       </span>
@@ -214,7 +264,7 @@ export default function AdminPOrders() {
                       <Select
                         value={order.status}
                         onValueChange={(v) => void changeStatus(order, v)}
-                        disabled={updatingId === order.id}
+                        disabled={updateStatus.isPending}
                       >
                         <SelectTrigger
                           className={`h-7 text-xs w-32 border-0 px-2 rounded-full font-medium ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-600"}`}
@@ -237,7 +287,7 @@ export default function AdminPOrders() {
                           variant="ghost"
                           size="sm"
                           className="h-7 text-xs gap-1"
-                          onClick={() => setSelected(order)}
+                          onClick={() => openDetail(order)}
                           data-ocid={`adminp.orders.item.${i + 1}.view_button`}
                         >
                           <Eye className="w-3 h-3" /> View
@@ -249,7 +299,7 @@ export default function AdminPOrders() {
                             onClick={() =>
                               void changeStatus(order, "confirmed")
                             }
-                            disabled={updatingId === order.id}
+                            disabled={updateStatus.isPending}
                             data-ocid={`adminp.orders.item.${i + 1}.confirm_button`}
                           >
                             <CheckCircle2 className="w-3 h-3" /> Confirm
@@ -266,9 +316,14 @@ export default function AdminPOrders() {
       )}
 
       {/* Order Detail Dialog */}
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+      <Dialog
+        open={!!selected}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      >
         <DialogContent
-          className="max-w-lg max-h-[90vh] overflow-y-auto"
+          className="max-w-xl max-h-[92vh] overflow-y-auto"
           data-ocid="adminp.orders.detail.dialog"
         >
           <DialogHeader>
@@ -278,8 +333,8 @@ export default function AdminPOrders() {
           </DialogHeader>
           {selected && (
             <div className="space-y-4 pt-2 text-sm">
-              {/* Status badge */}
-              <div className="flex items-center gap-2">
+              {/* Status badge + date */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[selected.status] ?? "bg-gray-100 text-gray-600"}`}
                 >
@@ -288,23 +343,35 @@ export default function AdminPOrders() {
                 <span className="text-gray-400 text-xs">
                   {formatDate(selected.createdAt)}
                 </span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium ml-auto ${selected.paymentMethod === "stripe" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                >
+                  {selected.paymentMethod === "stripe"
+                    ? "Online Payment"
+                    : "Cash on Delivery"}
+                </span>
               </div>
 
+              {/* Customer info */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-500 mb-1">Customer</p>
+                  <p className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wide">
+                    Customer
+                  </p>
                   <p className="font-medium text-gray-900 text-xs">
                     {selected.address.fullName || "—"}
                   </p>
-                  <p className="text-gray-500 text-xs">
+                  <p className="text-gray-500 text-xs mt-0.5">
                     {selected.address.phone}
                   </p>
-                  <p className="text-gray-500 text-xs truncate">
+                  <p className="text-gray-400 text-xs font-mono mt-0.5 truncate">
                     {selected.userId.slice(0, 20)}…
                   </p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-500 mb-1">Delivery Address</p>
+                  <p className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wide">
+                    Delivery Address
+                  </p>
                   <p className="text-gray-700 text-xs">
                     {selected.address.line1}
                   </p>
@@ -317,32 +384,40 @@ export default function AdminPOrders() {
                     {selected.address.city}, {selected.address.state}{" "}
                     {selected.address.pincode}
                   </p>
+                  <p className="text-gray-500 text-xs">
+                    {selected.address.country}
+                  </p>
                 </div>
               </div>
 
+              {/* Items */}
               <div>
                 <p className="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wide">
-                  Products ({selected.items.length})
+                  Items ({selected.items.length})
                 </p>
-                {selected.items.map((item) => {
-                  const product = PRODUCTS_SEED_DATA.find(
-                    (p) => p.id === item.productId,
-                  );
-                  return (
+                <div className="space-y-1">
+                  {selected.items.map((item, idx) => (
                     <div
-                      key={item.productId}
-                      className="flex justify-between bg-gray-50 rounded-lg px-3 py-2 mb-1 text-xs items-center gap-2"
+                      key={`${item.productId}-${idx}`}
+                      className="flex justify-between bg-gray-50 rounded-lg px-3 py-2 text-xs items-center gap-2"
                     >
-                      <span className="text-gray-800 flex-1">
-                        {product?.name ?? `Product #${item.productId}`} ×
-                        {item.quantity}
-                      </span>
+                      <div className="flex-1">
+                        <span className="text-gray-800">
+                          Product #{item.productId}
+                        </span>
+                        {item.productType && (
+                          <span className="ml-2 text-gray-400">
+                            ({item.productType})
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-gray-500">×{item.quantity}</span>
                       <span className="font-semibold shrink-0">
                         {formatPrice(item.price * item.quantity)}
                       </span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
                 {selected.discountAmount > 0 && (
                   <div className="flex justify-between px-3 py-1.5 text-xs text-green-700">
                     <span>
@@ -360,46 +435,66 @@ export default function AdminPOrders() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-gray-500 mb-1">Payment</p>
-                  <p className="font-medium">
-                    {selected.paymentMethod === "stripe"
-                      ? "Online / Stripe"
-                      : "Cash on Delivery"}
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-gray-500 mb-1">Order Date</p>
-                  <p className="font-medium">
-                    {formatDate(selected.createdAt)}
-                  </p>
-                </div>
+              {/* Status update */}
+              <div>
+                <p className="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wide">
+                  Update Status
+                </p>
+                <Select
+                  value={selected.status}
+                  onValueChange={(v) => void changeStatus(selected, v)}
+                  disabled={updateStatus.isPending}
+                >
+                  <SelectTrigger
+                    className="w-full"
+                    data-ocid="adminp.orders.detail.status_select"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="flex gap-2">
+              {/* Notes */}
+              <div>
+                <p className="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wide">
+                  Admin Notes
+                </p>
+                <Textarea
+                  rows={2}
+                  value={notesEdit}
+                  onChange={(e) => setNotesEdit(e.target.value)}
+                  placeholder="Add internal notes (not visible to customer)…"
+                  className="text-xs"
+                  data-ocid="adminp.orders.detail.notes_textarea"
+                />
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="flex-1 text-xs"
-                  onClick={() => void changeStatus(selected, "confirmed")}
-                  disabled={
-                    selected.status !== "pending" || updatingId === selected.id
-                  }
-                  data-ocid="adminp.orders.detail.confirm_button"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Confirm
-                </Button>
-                <Button
                   variant="outline"
-                  className="flex-1 text-xs"
-                  size="sm"
-                  onClick={() => setSelected(null)}
-                  data-ocid="adminp.orders.detail.close_button"
+                  className="mt-2 text-xs"
+                  onClick={() => void saveNotes()}
+                  disabled={savingNotes}
+                  data-ocid="adminp.orders.detail.save_notes_button"
                 >
-                  Close
+                  {savingNotes ? "Saving…" : "Save Notes"}
                 </Button>
               </div>
+
+              <Button
+                variant="outline"
+                className="w-full text-xs"
+                size="sm"
+                onClick={() => setSelected(null)}
+                data-ocid="adminp.orders.detail.close_button"
+              >
+                Close
+              </Button>
             </div>
           )}
         </DialogContent>

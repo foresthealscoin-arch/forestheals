@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { Link } from "@tanstack/react-router";
 import {
   Facebook,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../backend";
 
 const QUICK_LINKS = [
   { label: "About Us", to: "/about" },
@@ -43,6 +45,7 @@ const SOCIAL_LINKS = [
 export function Footer() {
   const [email, setEmail] = useState("");
   const [subscribing, setSubscribing] = useState(false);
+  const { actor } = useActor(createActor);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,12 +54,19 @@ export function Footer() {
       return;
     }
     setSubscribing(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setSubscribing(false);
-    setEmail("");
-    toast.success("You're subscribed!", {
-      description: "Welcome to the Forestheals community.",
-    });
+    try {
+      if (actor) {
+        await actor.subscribeEmail(email.trim());
+      }
+      setEmail("");
+      toast.success("You're subscribed!", {
+        description: "Welcome to the Forestheals community.",
+      });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   return (

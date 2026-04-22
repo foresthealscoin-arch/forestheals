@@ -118,13 +118,13 @@ export function Header() {
                 </Link>
               ))}
               {isAdmin && (
-                <Link
-                  to="/admin"
+                <a
+                  href="/admin-p"
                   className="px-3 py-2 rounded-lg text-sm font-medium text-primary bg-primary/8 hover:bg-primary/15 transition-smooth"
                   data-ocid="header.nav.admin.link"
                 >
                   Admin
-                </Link>
+                </a>
               )}
             </nav>
 
@@ -207,14 +207,14 @@ export function Header() {
                         My Dashboard
                       </Link>
                       {isAdmin && (
-                        <Link
-                          to="/admin"
+                        <a
+                          href="/admin-p"
                           className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-muted transition-smooth text-primary"
                           data-ocid="header.user.admin.link"
                         >
                           <Shield className="w-4 h-4" />
                           Admin Panel
-                        </Link>
+                        </a>
                       )}
                       <button
                         type="button"
@@ -316,13 +316,13 @@ export function Header() {
                   </Link>
                 ))}
                 {isAdmin && (
-                  <Link
-                    to="/admin"
+                  <a
+                    href="/admin-p"
                     className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-primary bg-primary/8"
                     data-ocid="header.mobile.admin.link"
                   >
                     Admin Panel
-                  </Link>
+                  </a>
                 )}
               </nav>
               <div className="p-4 border-t border-border">

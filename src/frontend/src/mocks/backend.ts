@@ -1,6 +1,7 @@
 import type {
   AdminCoupon,
   AdminExpense,
+  AdminLoginResult,
   AdminNotification,
   AdminStats,
   AdminTask,
@@ -30,7 +31,7 @@ import type {
   UserRole,
   backendInterface,
 } from "../backend";
-import { ActivityType, OrderStatus, PaymentMethod } from "../backend";
+import { ActivityType, OrderStatus, PaymentMethod, ProductStatus } from "../backend";
 
 const sampleProduct1: Product = {
   id: BigInt(1),
@@ -43,10 +44,12 @@ const sampleProduct1: Product = {
   stock: BigInt(100),
   imageKey: "organic_ashwagandha_forestheals_1",
   imageUrl: "/assets/products/organic_ashwagandha_forestheals_1-019d9662-2fc6-7459-b0c5-2c13876dc59e.jpg",
+  images: ["/assets/products/organic_ashwagandha_forestheals_1-019d9662-2fc6-7459-b0c5-2c13876dc59e.jpg"],
   discount: BigInt(10),
   category: "Ayurvedic Powders",
   price: BigInt(299),
   reviewCount: BigInt(48),
+  status: ProductStatus.active,
 };
 
 const sampleProduct2: Product = {
@@ -60,10 +63,12 @@ const sampleProduct2: Product = {
   stock: BigInt(80),
   imageKey: "organic_moringa_forestheals_1",
   imageUrl: "/assets/products/organic_moringa_forestheals_1-019d9662-2c82-721a-8a13-e9acf8587930.jpg",
+  images: ["/assets/products/organic_moringa_forestheals_1-019d9662-2c82-721a-8a13-e9acf8587930.jpg"],
   discount: BigInt(0),
   category: "Ayurvedic Powders",
   price: BigInt(249),
   reviewCount: BigInt(32),
+  status: ProductStatus.active,
 };
 
 const sampleProduct3: Product = {
@@ -77,10 +82,12 @@ const sampleProduct3: Product = {
   stock: BigInt(60),
   imageKey: "brahmi_forestheals_1",
   imageUrl: "/assets/products/brahmi_forestheals_1-019d9662-2c41-75bc-a5b8-eb510ab47ee9.jpg",
+  images: ["/assets/products/brahmi_forestheals_1-019d9662-2c41-75bc-a5b8-eb510ab47ee9.jpg"],
   discount: BigInt(5),
   category: "Ayurvedic Powders",
   price: BigInt(199),
   reviewCount: BigInt(21),
+  status: ProductStatus.active,
 };
 
 const sampleProduct4: Product = {
@@ -94,10 +101,12 @@ const sampleProduct4: Product = {
   stock: BigInt(90),
   imageKey: "triphala_churan_forestheals_1",
   imageUrl: "/assets/products/triphala_churan_forestheals_1-019d9662-2c85-7188-a222-c19b81ea8ecd.jpg",
+  images: ["/assets/products/triphala_churan_forestheals_1-019d9662-2c85-7188-a222-c19b81ea8ecd.jpg"],
   discount: BigInt(0),
   category: "Ayurvedic Powders",
   price: BigInt(179),
   reviewCount: BigInt(67),
+  status: ProductStatus.active,
 };
 
 const sampleProduct5: Product = {
@@ -111,10 +120,12 @@ const sampleProduct5: Product = {
   stock: BigInt(120),
   imageKey: "organic_amla_powder_forestheals_1",
   imageUrl: "/assets/products/organic_amla_powder_forestheals_1-019d9662-2c78-73db-94e2-e64ae483c495.jpg",
+  images: ["/assets/products/organic_amla_powder_forestheals_1-019d9662-2c78-73db-94e2-e64ae483c495.jpg"],
   discount: BigInt(15),
   category: "Ayurvedic Powders",
   price: BigInt(149),
   reviewCount: BigInt(54),
+  status: ProductStatus.active,
 };
 
 const sampleProduct6: Product = {
@@ -128,10 +139,12 @@ const sampleProduct6: Product = {
   stock: BigInt(75),
   imageKey: "organic_neem_powder_forestheals_1",
   imageUrl: "/assets/products/organic_neem_powder_forestheals_1-019d9662-2c74-7308-abad-c167097c463a.jpg",
+  images: ["/assets/products/organic_neem_powder_forestheals_1-019d9662-2c74-7308-abad-c167097c463a.jpg"],
   discount: BigInt(0),
   category: "Ayurvedic Powders",
   price: BigInt(129),
   reviewCount: BigInt(29),
+  status: ProductStatus.active,
 };
 
 const sampleReview: Review = {
@@ -147,7 +160,7 @@ const sampleReview: Review = {
 
 const sampleOrder: Order = {
   id: BigInt(1),
-  status: OrderStatus.delivered,
+  status: OrderStatus.completed,
   paymentMethod: PaymentMethod.cod,
   userId: "2vxsx-fae" as unknown as import("@icp-sdk/core/principal").Principal,
   discountAmount: BigInt(0),
@@ -190,6 +203,11 @@ const emptyUserProfile: UserProfile = {
   phone: "+91 9999999999",
   createdAt: BigInt(Date.now() * 1_000_000),
   addresses: [],
+  country: "India",
+  city: "",
+  state: "",
+  pincode: "",
+  phoneVerified: false,
 };
 
 const emptyUserActivity: UserActivity = {
@@ -245,10 +263,12 @@ export const mockBackend: backendInterface = {
     stock: input.stock,
     imageKey: input.imageKey,
     imageUrl: input.imageUrl,
+    images: input.images ?? [],
     discount: input.discount,
     category: input.category,
     price: input.price,
     reviewCount: BigInt(0),
+    status: input.status,
   }),
   createReview: async (_input) => sampleReview,
   createTask: async (task: AdminTask) => task,
@@ -263,21 +283,22 @@ export const mockBackend: backendInterface = {
   deleteTeamMember: async () => false,
   endFlashSale: async () => true,
   getActiveFlashSales: async () => [sampleFlashSale],
-  getAdminCoupons: async () => [],
-  getAdminNotifications: async (): Promise<AdminNotification[]> => [],
-  getAdminStats: async (): Promise<AdminStats> => ({
+   getAdminCoupons: async () => [],
+   getAdminNotifications: async (): Promise<AdminNotification[]> => [],
+   getAdminSession: async () => false,
+   getAdminStats: async (): Promise<AdminStats> => ({
     totalProducts: BigInt(20),
     totalOrders: BigInt(157),
     totalRevenue: BigInt(47350),
   }),
-  getAdminTasks: async () => [],
-  getAllActivities: async (): Promise<UserActivity[]> => [],
-  getAllBlogPosts: async (): Promise<BlogPost[]> => [],
-  getAllCustomers: async (): Promise<UserProfile[]> => [],
-  getAllCustomersEnriched: async (): Promise<EnrichedCustomerProfile[]> => [],
-  getAllOrders: async (): Promise<Order[]> => [sampleOrder],
-  getAllReviews: async (): Promise<Review[]> => [sampleReview],
-  getAnalytics: async () => ({
+   getAdminTasks: async () => [],
+   getAllActivities: async (): Promise<UserActivity[]> => [],
+   getAllBlogPosts: async (): Promise<BlogPost[]> => [],
+   getAllCustomers: async (): Promise<UserProfile[]> => [],
+   getAllCustomersEnriched: async (): Promise<EnrichedCustomerProfile[]> => [],
+   getAllOrders: async (): Promise<Order[]> => [sampleOrder],
+   getAllReviews: async (): Promise<Review[]> => [sampleReview],
+   getAnalytics: async () => ({
     totalOrders: BigInt(0),
     totalExpenses: BigInt(0),
     totalRevenue: BigInt(0),
@@ -289,6 +310,33 @@ export const mockBackend: backendInterface = {
     activeUsersToday: BigInt(0),
     totalRegisteredUsers: BigInt(0),
     recentActivities: [],
+  }),
+   getAnalyticsSummary: async () => ({
+    totalRevenue: BigInt(0),
+    orderCount: BigInt(0),
+    customerCount: BigInt(0),
+    avgOrderValue: BigInt(0),
+    netProfit: BigInt(0),
+    totalExpenses: BigInt(0),
+    topProducts: [],
+    revenueByDay: [],
+    revenueByMonth: [],
+    paymentBreakdown: { codCount: BigInt(0), codAmount: BigInt(0), onlineCount: BigInt(0), onlineAmount: BigInt(0) },
+  }),
+   getDashboardKPIs: async () => ({
+    todayRevenue: BigInt(0),
+    todayOrders: BigInt(0),
+    weekRevenue: BigInt(0),
+    weekOrders: BigInt(0),
+    monthRevenue: BigInt(0),
+    monthOrders: BigInt(0),
+    totalRevenue: BigInt(0),
+    totalOrders: BigInt(0),
+    totalCustomers: BigInt(0),
+    totalProducts: BigInt(0),
+    lowStockCount: BigInt(0),
+    pendingOrderCount: BigInt(0),
+    pendingReviewCount: BigInt(0),
   }),
   getB2BInquiries: async (): Promise<B2BInquiry[]> => [{
     id: BigInt(1),
@@ -315,9 +363,10 @@ export const mockBackend: backendInterface = {
   getCustomerProfile: async () => null,
   getExpenses: async () => [],
   getExpensesByCategory: async () => [],
-  getInventoryItems: async () => [],
-  getLowStockItems: async () => [],
-  getNewsletterSubscribers: async () => [],
+   getInventoryItems: async () => [],
+   getInventorySummary: async () => [],
+   getLowStockItems: async () => [],
+   getNewsletterSubscribers: async () => [],
   getOrder: async () => sampleOrder,
   getProduct: async () => sampleProduct1,
   getProductReviews: async () => [sampleReview, {
@@ -327,8 +376,26 @@ export const mockBackend: backendInterface = {
     rating: BigInt(5),
   }],
   getProducts: async () => [sampleProduct1, sampleProduct2, sampleProduct3, sampleProduct4, sampleProduct5, sampleProduct6],
-  getRecommendations: async () => [sampleProduct1, sampleProduct3, sampleProduct5],
-  getStoreSettings: async (): Promise<StoreSettings | null> => null,
+   getRecentActivity: async () => [],
+   getRecommendations: async () => [sampleProduct1, sampleProduct3, sampleProduct5],
+  getStoreSettings: async (): Promise<StoreSettings> => ({
+    storeName: "Forestheals",
+    contactEmail: "hello@forestheals.in",
+    contactPhone: "+91 9929059240",
+    gstNumber: "",
+    gstRate: BigInt(18),
+    currency: "INR",
+    timezone: "Asia/Kolkata",
+    seoTitle: "Forestheals",
+    seoDescription: "Premium eco-Ayurvedic products",
+    logoUrl: "/assets/logo.png",
+    faviconUrl: "/favicon.ico",
+    facebookUrl: "",
+    instagramUrl: "",
+    whatsappNumber: "9929059240",
+    shippingDefault: BigInt(50),
+    freeShippingThreshold: BigInt(499),
+  }),
   getStripeSessionStatus: async (): Promise<StripeSessionStatus> => ({
     __kind__: "completed",
     completed: { response: "success" },
@@ -343,6 +410,8 @@ export const mockBackend: backendInterface = {
   isCallerAdmin: async () => false,
   isStripeConfigured: async () => true,
   isWishlisted: async () => false,
+  adminListProducts: async () => [sampleProduct1, sampleProduct2, sampleProduct3, sampleProduct4, sampleProduct5, sampleProduct6],
+  listOrders: async (): Promise<Order[]> => [sampleOrder],
   listAllOrders: async () => [sampleOrder],
   listB2BInquiries: async (): Promise<B2BInquiry[]> => [{
     id: BigInt(1),
@@ -372,6 +441,7 @@ export const mockBackend: backendInterface = {
   removeTeamMember: async () => false,
   saveStoreSettings: async (settings: StoreSettings) => settings,
   seedProducts: async () => undefined,
+  setAdminPassword: async (): Promise<AdminLoginResult> => ({ __kind__: "ok", ok: true }),
   setStripeConfiguration: async () => undefined,
   setUserRole: async () => undefined,
   submitB2BInquiry: async (input: B2BInquiryInput): Promise<B2BInquiry> => ({
@@ -403,6 +473,7 @@ export const mockBackend: backendInterface = {
   updateInventory: async () => null,
   updateInventoryStock: async () => null,
   updateOrderStatus: async () => true,
+  updateOrderNotes: async () => true,
   updateProduct: async () => true,
   updateStoreSettings: async (settings: StoreSettings) => settings,
   updateTask: async (_id, task: AdminTask) => task,
@@ -414,5 +485,5 @@ export const mockBackend: backendInterface = {
     discountPercent: BigInt(10),
     message: "Coupon applied successfully!",
   }),
-  verifyAdminCredentials: async () => false,
+  verifyAdminCredentials: async (): Promise<AdminLoginResult> => ({ __kind__: "ok", ok: false }),
 };

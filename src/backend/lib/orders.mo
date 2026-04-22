@@ -28,6 +28,7 @@ module {
       stripePaymentId = input.stripePaymentId;
       couponCode = input.couponCode;
       discountAmount = discountAmount;
+      notes = input.notes;
     };
     store.add(order);
     order;
@@ -56,6 +57,22 @@ module {
       if (o.id == id) {
         found := true;
         { o with status; updatedAt = now };
+      } else { o };
+    });
+    found;
+  };
+
+  public func updateOrderNotes(
+    store : OrderStore,
+    id : Nat,
+    notes : ?Text,
+  ) : Bool {
+    var found = false;
+    let now = Time.now();
+    store.mapInPlace(func(o) {
+      if (o.id == id) {
+        found := true;
+        { o with notes; updatedAt = now };
       } else { o };
     });
     found;

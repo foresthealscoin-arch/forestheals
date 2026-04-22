@@ -14,37 +14,59 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertCircle,
   CheckCircle2,
   Circle,
   ClipboardList,
   Edit2,
   Plus,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  useAdminTasks,
+  useCompleteAdminTask,
+  useCreateAdminTask,
+  useDeleteAdminTask,
+  useUpdateAdminTask,
+} from "../../hooks/useAdminData";
+import type { AdminTaskView } from "../../services/taskService";
 import { APTag, AdminPLayout } from "./AdminPLayout";
-import type { APTask } from "./adminpStore";
-import { useAdminPStore } from "./adminpStore";
+
+const PRIORITIES = ["High", "Medium", "Low"] as const;
 
 function genId() {
   return `TASK-${Date.now().toString(36).toUpperCase()}`;
 }
 
-const PRIORITIES = ["High", "Medium", "Low"] as const;
+const EMPTY_TASK: AdminTaskView = {
+  id: "",
+  title: "",
+  description: "",
+  notes: "",
+  category: "General",
+  priority: "Medium",
+  assignedTo: "",
+  completed: false,
+  createdAt: Date.now(),
+};
 
 export default function AdminPTasks() {
-  const tasks = useAdminPStore((s) => s.tasks);
-  const addTask = useAdminPStore((s) => s.addTask);
-  const updateTask = useAdminPStore((s) => s.updateTask);
-  const deleteTask = useAdminPStore((s) => s.deleteTask);
+  const { data: tasks = [], isLoading, isError, refetch } = useAdminTasks();
+  const createMutation = useCreateAdminTask();
+  const updateMutation = useUpdateAdminTask();
+  const deleteMutation = useDeleteAdminTask();
+  const completeMutation = useCompleteAdminTask();
 
   const [filter, setFilter] = useState<"all" | "pending" | "done">("all");
   const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<APTask | null>(null);
-  const [form, setForm] = useState<Partial<APTask>>({});
+  const [editTarget, setEditTarget] = useState<AdminTaskView | null>(null);
+  const [form, setForm] = useState<AdminTaskView>(EMPTY_TASK);
 
   const filtered = tasks.filter((t) => {
     if (filter === "pending") return !t.completed;
@@ -54,42 +76,62 @@ export default function AdminPTasks() {
 
   function openAdd() {
     setEditTarget(null);
-    setForm({
-      priority: "Medium",
-      completed: false,
-      createdAt: new Date().toISOString().split("T")[0],
-    });
+    setForm({ ...EMPTY_TASK, id: genId(), createdAt: Date.now() });
     setShowModal(true);
   }
 
-  function openEdit(t: APTask) {
+  function openEdit(t: AdminTaskView) {
     setEditTarget(t);
     setForm({ ...t });
     setShowModal(true);
   }
 
-  function handleSave() {
-    if (!form.title?.trim()) {
+  async function handleSave() {
+    if (!form.title.trim()) {
       toast.error("Title is required");
       return;
     }
-    if (editTarget) {
-      updateTask({ ...editTarget, ...form } as APTask);
-      toast.success("Task updated");
-    } else {
-      addTask({
-        id: genId(),
-        title: form.title ?? "",
-        priority: form.priority ?? "Medium",
-        dueDate: form.dueDate ?? "",
-        assignedTo: form.assignedTo ?? "",
-        completed: false,
-        notes: form.notes ?? "",
-        createdAt: form.createdAt ?? "",
-      });
-      toast.success("Task added");
+    try {
+      if (editTarget) {
+        await updateMutation.mutateAsync({ id: editTarget.id, task: form });
+        toast.success("Task updated");
+      } else {
+        await createMutation.mutateAsync(form);
+        toast.success("Task added");
+      }
+      setShowModal(false);
+    } catch {
+      toast.error("Failed to save task");
     }
-    setShowModal(false);
+  }
+
+  async function handleToggle(task: AdminTaskView) {
+    if (task.completed) {
+      // Re-open: update with completed = false
+      try {
+        await updateMutation.mutateAsync({
+          id: task.id,
+          task: { ...task, completed: false },
+        });
+      } catch {
+        toast.error("Failed to update task");
+      }
+    } else {
+      try {
+        await completeMutation.mutateAsync(task.id);
+      } catch {
+        toast.error("Failed to complete task");
+      }
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success("Task removed");
+    } catch {
+      toast.error("Failed to delete task");
+    }
   }
 
   const priorityColor: Record<string, "red" | "yellow" | "gray"> = {
@@ -97,6 +139,28 @@ export default function AdminPTasks() {
     Medium: "yellow",
     Low: "gray",
   };
+
+  if (isError) {
+    return (
+      <AdminPLayout title="Tasks & Notes" subtitle="Track team tasks">
+        <div
+          className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center"
+          data-ocid="adminp.tasks.error_state"
+        >
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-700 font-medium">Failed to load tasks</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry
+          </Button>
+        </div>
+      </AdminPLayout>
+    );
+  }
 
   return (
     <AdminPLayout
@@ -132,83 +196,96 @@ export default function AdminPTasks() {
         ))}
       </div>
 
-      {/* Task List */}
-      <div className="space-y-3">
-        {filtered.map((task, i) => (
-          <div
-            key={task.id}
-            data-ocid={`adminp.tasks.item.${i + 1}`}
-            className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-start gap-4 ${task.completed ? "opacity-60" : ""}`}
-          >
-            <button
-              type="button"
-              onClick={() =>
-                updateTask({ ...task, completed: !task.completed })
-              }
-              className="mt-0.5 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
-              data-ocid={`adminp.tasks.item.${i + 1}.toggle`}
+      {isLoading ? (
+        <div className="space-y-3" data-ocid="adminp.tasks.loading_state">
+          {["a", "b", "c"].map((k) => (
+            <Skeleton key={k} className="h-20 w-full rounded-2xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((task, i) => (
+            <div
+              key={task.id}
+              data-ocid={`adminp.tasks.item.${i + 1}`}
+              className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-start gap-4 ${task.completed ? "opacity-60" : ""}`}
             >
-              {task.completed ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
-              ) : (
-                <Circle className="w-5 h-5" />
-              )}
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <p
-                  className={`font-medium text-gray-900 text-sm ${task.completed ? "line-through" : ""}`}
+              <button
+                type="button"
+                onClick={() => void handleToggle(task)}
+                className="mt-0.5 text-gray-400 hover:text-green-600 transition-colors flex-shrink-0"
+                disabled={
+                  completeMutation.isPending || updateMutation.isPending
+                }
+                data-ocid={`adminp.tasks.item.${i + 1}.toggle`}
+              >
+                {task.completed ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Circle className="w-5 h-5" />
+                )}
+              </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <p
+                    className={`font-medium text-gray-900 text-sm ${task.completed ? "line-through" : ""}`}
+                  >
+                    {task.title}
+                  </p>
+                  <APTag
+                    label={task.priority}
+                    color={priorityColor[task.priority] ?? "gray"}
+                  />
+                </div>
+                {task.notes && (
+                  <p className="text-xs text-gray-500 mb-1">{task.notes}</p>
+                )}
+                <div className="flex items-center gap-3 text-xs text-gray-400">
+                  {task.dueDate && (
+                    <span>
+                      Due: {new Date(task.dueDate).toLocaleDateString("en-IN")}
+                    </span>
+                  )}
+                  {task.assignedTo && <span>→ {task.assignedTo}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => openEdit(task)}
+                  data-ocid={`adminp.tasks.item.${i + 1}.edit_button`}
                 >
-                  {task.title}
-                </p>
-                <APTag
-                  label={task.priority}
-                  color={priorityColor[task.priority]}
-                />
-              </div>
-              {task.notes && (
-                <p className="text-xs text-gray-500 mb-1">{task.notes}</p>
-              )}
-              <div className="flex items-center gap-3 text-xs text-gray-400">
-                {task.dueDate && <span>Due: {task.dueDate}</span>}
-                {task.assignedTo && <span>→ {task.assignedTo}</span>}
+                  <Edit2 className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                  onClick={() => void handleDelete(task.id)}
+                  data-ocid={`adminp.tasks.item.${i + 1}.delete_button`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() => openEdit(task)}
-                data-ocid={`adminp.tasks.item.${i + 1}.edit_button`}
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
-                onClick={() => {
-                  deleteTask(task.id);
-                  toast.success("Task removed");
-                }}
-                data-ocid={`adminp.tasks.item.${i + 1}.delete_button`}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+          ))}
+          {filtered.length === 0 && (
+            <div
+              className="bg-white rounded-2xl border border-gray-100 p-14 text-center"
+              data-ocid="adminp.tasks.empty_state"
+            >
+              <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">
+                {filter === "all"
+                  ? "No tasks yet — add your first task to get started!"
+                  : `No ${filter} tasks`}
+              </p>
             </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <div
-            className="bg-white rounded-2xl border border-gray-100 p-14 text-center"
-            data-ocid="adminp.tasks.empty_state"
-          >
-            <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm">No tasks here</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
@@ -223,7 +300,7 @@ export default function AdminPTasks() {
             <div className="space-y-1.5">
               <Label>Title *</Label>
               <Input
-                value={form.title ?? ""}
+                value={form.title}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, title: e.target.value }))
                 }
@@ -235,13 +312,8 @@ export default function AdminPTasks() {
               <div className="space-y-1.5">
                 <Label>Priority</Label>
                 <Select
-                  value={form.priority ?? "Medium"}
-                  onValueChange={(v) =>
-                    setForm((f) => ({
-                      ...f,
-                      priority: v as APTask["priority"],
-                    }))
-                  }
+                  value={form.priority}
+                  onValueChange={(v) => setForm((f) => ({ ...f, priority: v }))}
                 >
                   <SelectTrigger data-ocid="adminp.tasks.modal.priority_select">
                     <SelectValue />
@@ -259,9 +331,18 @@ export default function AdminPTasks() {
                 <Label>Due Date</Label>
                 <Input
                   type="date"
-                  value={form.dueDate ?? ""}
+                  value={
+                    form.dueDate
+                      ? new Date(form.dueDate).toISOString().split("T")[0]
+                      : ""
+                  }
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, dueDate: e.target.value }))
+                    setForm((f) => ({
+                      ...f,
+                      dueDate: e.target.value
+                        ? new Date(e.target.value).getTime()
+                        : undefined,
+                    }))
                   }
                   data-ocid="adminp.tasks.modal.due_date_input"
                 />
@@ -282,7 +363,7 @@ export default function AdminPTasks() {
               <Label>Notes</Label>
               <Textarea
                 rows={2}
-                value={form.notes ?? ""}
+                value={form.notes}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, notes: e.target.value }))
                 }
@@ -293,10 +374,15 @@ export default function AdminPTasks() {
             <div className="flex gap-2 pt-1">
               <Button
                 className="flex-1 bg-[#004a38] hover:bg-[#003a2c]"
-                onClick={handleSave}
+                onClick={() => void handleSave()}
+                disabled={createMutation.isPending || updateMutation.isPending}
                 data-ocid="adminp.tasks.modal.submit_button"
               >
-                {editTarget ? "Save" : "Add Task"}
+                {createMutation.isPending || updateMutation.isPending
+                  ? "Saving…"
+                  : editTarget
+                    ? "Save"
+                    : "Add Task"}
               </Button>
               <Button
                 variant="outline"

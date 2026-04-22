@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInternetIdentity } from "@caffeineai/core-infrastructure";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   CheckCircle2,
@@ -25,16 +25,15 @@ import {
   formatPrice,
   getOrderStatusColor,
 } from "../../lib/formatters";
-import { PRODUCTS_SEED_DATA } from "../../lib/seedData";
 import { useAuthStore } from "../../stores/useAuthStore";
 import type { OrderStatus } from "../../types";
 
 export const ADMIN_NAV = [
-  { icon: LayoutDashboard, label: "Dashboard", to: "/admin" },
-  { icon: Package, label: "Products", to: "/admin/products" },
-  { icon: ShoppingCart, label: "Orders", to: "/admin/orders" },
-  { icon: Users, label: "Users", to: "/admin/users" },
-  { icon: Star, label: "Reviews", to: "/admin/reviews" },
+  { icon: LayoutDashboard, label: "Dashboard", to: "/admin-p/dashboard" },
+  { icon: Package, label: "Products", to: "/admin-p/products" },
+  { icon: ShoppingCart, label: "Orders", to: "/admin-p/orders" },
+  { icon: Users, label: "Users", to: "/admin-p/customers" },
+  { icon: Star, label: "Reviews", to: "/admin-p/reviews" },
 ];
 
 export function AdminSidebar({ active }: { active: string }) {
@@ -66,9 +65,9 @@ export function AdminSidebar({ active }: { active: string }) {
           const Icon = item.icon;
           const isActive = active === item.to;
           return (
-            <Link
+            <a
               key={item.to}
-              to={item.to as "/admin"}
+              href={item.to}
               data-ocid={`admin.nav.${item.label.toLowerCase()}`}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-smooth ${
                 isActive
@@ -78,7 +77,7 @@ export function AdminSidebar({ active }: { active: string }) {
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
               {item.label}
-            </Link>
+            </a>
           );
         })}
       </nav>
@@ -101,8 +100,9 @@ export function AdminSidebar({ active }: { active: string }) {
 const STATUS_ICONS: Record<OrderStatus, React.ElementType> = {
   pending: Clock,
   confirmed: CheckCircle2,
+  processing: Clock,
   shipped: Truck,
-  delivered: CheckCircle2,
+  completed: CheckCircle2,
   cancelled: XCircle,
 };
 
@@ -122,7 +122,7 @@ export default function AdminDashboardPage() {
     },
     {
       label: "Total Products",
-      value: PRODUCTS_SEED_DATA.length,
+      value: 0,
       icon: Package,
     },
     { label: "Pending Orders", value: pendingCount, icon: Clock },
@@ -134,7 +134,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AdminSidebar active="/admin" />
+      <AdminSidebar active="/admin-p/dashboard" />
 
       <main className="flex-1 overflow-auto" data-ocid="admin.dashboard.page">
         <div className="bg-card border-b border-border px-8 py-5">
@@ -190,7 +190,10 @@ export default function AdminDashboardPage() {
             <div className="lg:col-span-2 bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">
                 <h2 className="font-semibold text-foreground">Recent Orders</h2>
-                <Link to="/admin/orders" data-ocid="admin.view_all_orders_link">
+                <a
+                  href="/admin-p/orders"
+                  data-ocid="admin.view_all_orders_link"
+                >
                   <Button
                     variant="ghost"
                     size="sm"
@@ -198,7 +201,7 @@ export default function AdminDashboardPage() {
                   >
                     View all <ArrowRight className="w-3 h-3" />
                   </Button>
-                </Link>
+                </a>
               </div>
               {isLoading ? (
                 <div className="p-6 space-y-3">
@@ -269,8 +272,8 @@ export default function AdminDashboardPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              <Link
-                                to="/admin/orders"
+                              <a
+                                href="/admin-p/orders"
                                 data-ocid={`admin.order_view.${i + 1}`}
                               >
                                 <Button
@@ -280,7 +283,7 @@ export default function AdminDashboardPage() {
                                 >
                                   <Eye className="w-3 h-3" /> View
                                 </Button>
-                              </Link>
+                              </a>
                             </td>
                           </tr>
                         );
@@ -297,21 +300,21 @@ export default function AdminDashboardPage() {
                 Quick Actions
               </h2>
               <div className="space-y-2.5">
-                <Link to="/admin/products" data-ocid="admin.quick_add_product">
+                <a href="/admin-p/products" data-ocid="admin.quick_add_product">
                   <Button className="w-full justify-start gap-2">
                     <Plus className="w-4 h-4" /> Add Product
                   </Button>
-                </Link>
-                <Link to="/admin/orders" data-ocid="admin.quick_view_orders">
+                </a>
+                <a href="/admin-p/orders" data-ocid="admin.quick_view_orders">
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-2 mt-1"
                   >
                     <ShoppingCart className="w-4 h-4" /> View All Orders
                   </Button>
-                </Link>
-                <Link
-                  to="/admin/reviews"
+                </a>
+                <a
+                  href="/admin-p/reviews"
                   data-ocid="admin.quick_manage_reviews"
                 >
                   <Button
@@ -320,7 +323,7 @@ export default function AdminDashboardPage() {
                   >
                     <Star className="w-4 h-4" /> Manage Reviews
                   </Button>
-                </Link>
+                </a>
               </div>
 
               <div className="mt-6 pt-6 border-t border-border space-y-2">
@@ -328,7 +331,7 @@ export default function AdminDashboardPage() {
                   Quick Stats
                 </p>
                 {[
-                  { label: "Total Products", value: PRODUCTS_SEED_DATA.length },
+                  { label: "Total Products", value: 0 },
                   { label: "Pending Orders", value: pendingCount },
                   { label: "Flash Sales Active", value: 0 },
                 ].map((item) => (

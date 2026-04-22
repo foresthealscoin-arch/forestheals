@@ -14,13 +14,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { BarChart3, Edit2, Plus, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  BarChart3,
+  Edit2,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { AdminExpense } from "../../backend.d";
+import {
+  useAddExpense,
+  useAdminAnalytics,
+  useAdminExpenses,
+  useDeleteExpense,
+  useUpdateExpense,
+} from "../../hooks/useAdminData";
+import { toPrice } from "../../utils/convert";
 import { APKpiCard, AdminPLayout } from "./AdminPLayout";
-import type { APExpense } from "./adminpStore";
-import { useAdminPStore } from "./adminpStore";
 
 const EXPENSE_CATS = [
   "Ad Spend",
@@ -35,68 +50,99 @@ function genId() {
   return `EXP-${Date.now().toString(36).toUpperCase()}`;
 }
 
+function formatExpenseDate(ns: bigint | number): string {
+  return new Date(Number(ns) / 1_000_000).toLocaleDateString("en-IN");
+}
+
 export default function AdminPAnalytics() {
-  const orders = useAdminPStore((s) => s.orders);
-  const expenses = useAdminPStore((s) => s.expenses);
-  const addExpense = useAdminPStore((s) => s.addExpense);
-  const updateExpense = useAdminPStore((s) => s.updateExpense);
-  const deleteExpense = useAdminPStore((s) => s.deleteExpense);
+  const {
+    data: analytics,
+    isLoading: analyticsLoading,
+    isError,
+    refetch,
+  } = useAdminAnalytics();
+  const { data: expenses = [], isLoading: expLoading } = useAdminExpenses();
+  const addExpenseMutation = useAddExpense();
+  const updateExpenseMutation = useUpdateExpense();
+  const deleteExpenseMutation = useDeleteExpense();
 
   const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<APExpense | null>(null);
-  const [form, setForm] = useState<Partial<APExpense>>({});
-
-  const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const netProfit = totalRevenue - totalExpenses;
-  const adSpend = expenses
-    .filter((e) => e.category === "Ad Spend")
-    .reduce((s, e) => s + e.amount, 0);
-  const packagingCost = expenses
-    .filter((e) => e.category === "Packaging")
-    .reduce((s, e) => s + e.amount, 0);
-  const shippingCost = expenses
-    .filter((e) => e.category === "Shipping")
-    .reduce((s, e) => s + e.amount, 0);
-  const grossMargin =
-    totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0;
-  const avgOrder =
-    orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
+  const [editTarget, setEditTarget] = useState<AdminExpense | null>(null);
+  const [form, setForm] = useState<Partial<AdminExpense>>({});
 
   function openAdd() {
     setEditTarget(null);
-    setForm({
-      category: "Ad Spend",
-      date: new Date().toISOString().split("T")[0],
-    });
+    setForm({ category: "Ad Spend", date: BigInt(Date.now() * 1_000_000) });
     setShowModal(true);
   }
 
-  function openEdit(e: APExpense) {
+  function openEdit(e: AdminExpense) {
     setEditTarget(e);
     setForm({ ...e });
     setShowModal(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.amount || !form.description?.trim()) {
       toast.error("Amount and description are required");
       return;
     }
-    if (editTarget) {
-      updateExpense({ ...editTarget, ...form } as APExpense);
-      toast.success("Expense updated");
-    } else {
-      addExpense({
-        id: genId(),
+    try {
+      const expense: AdminExpense = {
+        id: editTarget?.id ?? genId(),
         category: form.category ?? "Misc",
-        amount: form.amount ?? 0,
+        amount: BigInt(Number(form.amount)),
         description: form.description ?? "",
-        date: form.date ?? "",
-      });
-      toast.success("Expense added");
+        date: form.date ?? BigInt(Date.now() * 1_000_000),
+        createdBy: editTarget?.createdBy ?? "admin",
+      };
+      if (editTarget) {
+        await updateExpenseMutation.mutateAsync({ id: editTarget.id, expense });
+        toast.success("Expense updated");
+      } else {
+        await addExpenseMutation.mutateAsync(expense);
+        toast.success("Expense added");
+      }
+      setShowModal(false);
+    } catch {
+      toast.error("Failed to save expense");
     }
-    setShowModal(false);
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteExpenseMutation.mutateAsync(id);
+      toast.success("Expense deleted");
+    } catch {
+      toast.error("Failed to delete expense");
+    }
+  }
+
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+
+  if (isError) {
+    return (
+      <AdminPLayout
+        title="Analytics & Financials"
+        subtitle="Track revenue, expenses, and profitability"
+      >
+        <div
+          className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center"
+          data-ocid="adminp.analytics.error_state"
+        >
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-700 font-medium">Failed to load analytics</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry
+          </Button>
+        </div>
+      </AdminPLayout>
+    );
   }
 
   return (
@@ -115,61 +161,69 @@ export default function AdminPAnalytics() {
       }
     >
       {/* KPIs */}
-      <div
-        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-6"
-        data-ocid="adminp.analytics.kpi_row"
-      >
-        <APKpiCard
-          label="Total Revenue (INR)"
-          value={`₹${totalRevenue.toLocaleString("en-IN")}`}
-          icon={BarChart3}
-          color="green"
-        />
-        <APKpiCard
-          label="Total Expenses"
-          value={`₹${totalExpenses.toLocaleString("en-IN")}`}
-          icon={BarChart3}
-          color="red"
-        />
-        <APKpiCard
-          label="Net Profit"
-          value={`₹${netProfit.toLocaleString("en-IN")}`}
-          icon={BarChart3}
-          color={netProfit >= 0 ? "green" : "red"}
-        />
-        <APKpiCard
-          label="Gross Margin"
-          value={`${grossMargin}%`}
-          icon={BarChart3}
-          color="blue"
-        />
-        <APKpiCard
-          label="Marketing Spend"
-          value={`₹${adSpend.toLocaleString("en-IN")}`}
-          icon={BarChart3}
-          color="yellow"
-        />
-        <APKpiCard
-          label="Packaging Cost"
-          value={`₹${packagingCost.toLocaleString("en-IN")}`}
-          icon={BarChart3}
-          color="yellow"
-        />
-        <APKpiCard
-          label="Shipping Cost"
-          value={`₹${shippingCost.toLocaleString("en-IN")}`}
-          icon={BarChart3}
-          color="yellow"
-        />
-        <APKpiCard
-          label="Avg Order Value"
-          value={`₹${avgOrder.toLocaleString("en-IN")}`}
-          icon={BarChart3}
-          color="blue"
-        />
-      </div>
+      {analyticsLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {["a", "b", "c", "d", "e", "f", "g", "h"].map((k) => (
+            <Skeleton key={k} className="h-24 w-full rounded-2xl" />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-6"
+          data-ocid="adminp.analytics.kpi_row"
+        >
+          <APKpiCard
+            label="Total Revenue"
+            value={toPrice(analytics?.totalRevenue ?? 0)}
+            icon={BarChart3}
+            color="green"
+          />
+          <APKpiCard
+            label="Total Expenses"
+            value={toPrice(totalExpenses)}
+            icon={BarChart3}
+            color="red"
+          />
+          <APKpiCard
+            label="Net Profit"
+            value={toPrice(analytics?.netProfit ?? 0)}
+            icon={BarChart3}
+            color={(analytics?.netProfit ?? 0) >= 0 ? "green" : "red"}
+          />
+          <APKpiCard
+            label="Avg Order Value"
+            value={toPrice(analytics?.avgOrderValue ?? 0)}
+            icon={BarChart3}
+            color="blue"
+          />
+          <APKpiCard
+            label="Total Orders"
+            value={analytics?.orderCount ?? 0}
+            icon={BarChart3}
+            color="blue"
+          />
+          <APKpiCard
+            label="Total Customers"
+            value={analytics?.customerCount ?? 0}
+            icon={BarChart3}
+            color="green"
+          />
+          <APKpiCard
+            label="COD Amount"
+            value={toPrice(analytics?.paymentBreakdown.codAmount ?? 0)}
+            icon={BarChart3}
+            color="yellow"
+          />
+          <APKpiCard
+            label="Online Amount"
+            value={toPrice(analytics?.paymentBreakdown.onlineAmount ?? 0)}
+            icon={BarChart3}
+            color="blue"
+          />
+        </div>
+      )}
 
-      {/* Expense Breakdown Chart */}
+      {/* Expense Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h3 className="font-semibold text-gray-900 mb-4 text-sm">
@@ -179,7 +233,7 @@ export default function AdminPAnalytics() {
             {EXPENSE_CATS.map((cat) => {
               const amt = expenses
                 .filter((e) => e.category === cat)
-                .reduce((s, e) => s + e.amount, 0);
+                .reduce((s, e) => s + Number(e.amount), 0);
               const pct =
                 totalExpenses > 0 ? Math.round((amt / totalExpenses) * 100) : 0;
               return (
@@ -202,7 +256,6 @@ export default function AdminPAnalytics() {
             })}
           </div>
         </div>
-
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h3 className="font-semibold text-gray-900 mb-4 text-sm">
             P&L Summary
@@ -211,19 +264,20 @@ export default function AdminPAnalytics() {
             {[
               {
                 label: "Gross Revenue",
-                value: totalRevenue,
+                value: analytics?.totalRevenue ?? 0,
                 cls: "text-green-700",
               },
               {
                 label: "Total Expenses",
                 value: -totalExpenses,
                 cls: "text-red-600",
+                neg: true,
               },
               {
                 label: "Net Profit",
-                value: netProfit,
+                value: analytics?.netProfit ?? 0,
                 cls:
-                  netProfit >= 0
+                  (analytics?.netProfit ?? 0) >= 0
                     ? "text-green-700 font-bold text-base"
                     : "text-red-600 font-bold text-base",
                 divider: true,
@@ -253,84 +307,91 @@ export default function AdminPAnalytics() {
             {expenses.length} entries
           </span>
         </div>
-        <div className="overflow-x-auto">
-          <table
-            className="w-full text-sm"
-            data-ocid="adminp.analytics.expenses_table"
-          >
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
-                <th className="text-left px-5 py-3 font-medium">Category</th>
-                <th className="text-left px-4 py-3 font-medium">Description</th>
-                <th className="text-right px-4 py-3 font-medium">Amount</th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
-                  Date
-                </th>
-                <th className="text-right px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expenses.map((e, i) => (
-                <tr
-                  key={e.id}
-                  data-ocid={`adminp.analytics.expense.item.${i + 1}`}
-                  className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
-                >
-                  <td className="px-5 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-50 text-green-700">
-                      {e.category}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 text-xs">
-                    {e.description}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-red-600">
-                    ₹{e.amount.toLocaleString("en-IN")}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">
-                    {e.date}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => openEdit(e)}
-                        data-ocid={`adminp.analytics.expense.item.${i + 1}.edit_button`}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
-                        onClick={() => {
-                          deleteExpense(e.id);
-                          toast.success("Expense deleted");
-                        }}
-                        data-ocid={`adminp.analytics.expense.item.${i + 1}.delete_button`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </td>
+        {expLoading ? (
+          <div className="p-4 space-y-2">
+            {["a", "b", "c"].map((k) => (
+              <Skeleton key={k} className="h-10 w-full rounded" />
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table
+              className="w-full text-sm"
+              data-ocid="adminp.analytics.expenses_table"
+            >
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
+                  <th className="text-left px-5 py-3 font-medium">Category</th>
+                  <th className="text-left px-4 py-3 font-medium">
+                    Description
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium">Amount</th>
+                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
+                    Date
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium">Actions</th>
                 </tr>
-              ))}
-              {expenses.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="py-10 text-center text-gray-400 text-sm"
-                    data-ocid="adminp.analytics.expenses.empty_state"
+              </thead>
+              <tbody>
+                {expenses.map((e, i) => (
+                  <tr
+                    key={e.id}
+                    data-ocid={`adminp.analytics.expense.item.${i + 1}`}
+                    className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
                   >
-                    No expenses recorded
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <td className="px-5 py-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-50 text-green-700">
+                        {e.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 text-xs">
+                      {e.description}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-red-600">
+                      ₹{Number(e.amount).toLocaleString("en-IN")}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">
+                      {formatExpenseDate(e.date)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => openEdit(e)}
+                          data-ocid={`adminp.analytics.expense.item.${i + 1}.edit_button`}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => void handleDelete(e.id)}
+                          data-ocid={`adminp.analytics.expense.item.${i + 1}.delete_button`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {expenses.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-10 text-center text-gray-400 text-sm"
+                      data-ocid="adminp.analytics.expenses.empty_state"
+                    >
+                      No expenses recorded. Add your first expense.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Expense Modal */}
@@ -349,12 +410,7 @@ export default function AdminPAnalytics() {
               <Label>Category</Label>
               <Select
                 value={form.category ?? "Ad Spend"}
-                onValueChange={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    category: v as APExpense["category"],
-                  }))
-                }
+                onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
               >
                 <SelectTrigger data-ocid="adminp.analytics.expense.modal.category_select">
                   <SelectValue />
@@ -373,9 +429,12 @@ export default function AdminPAnalytics() {
               <Input
                 type="number"
                 min={0}
-                value={form.amount ?? ""}
+                value={form.amount ? Number(form.amount) : ""}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, amount: Number(e.target.value) }))
+                  setForm((f) => ({
+                    ...f,
+                    amount: BigInt(Number(e.target.value)),
+                  }))
                 }
                 data-ocid="adminp.analytics.expense.modal.amount_input"
               />
@@ -392,24 +451,21 @@ export default function AdminPAnalytics() {
                 data-ocid="adminp.analytics.expense.modal.description_input"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={form.date ?? ""}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, date: e.target.value }))
-                }
-                data-ocid="adminp.analytics.expense.modal.date_input"
-              />
-            </div>
             <div className="flex gap-2 pt-1">
               <Button
                 className="flex-1 bg-[#004a38] hover:bg-[#003a2c]"
-                onClick={handleSave}
+                onClick={() => void handleSave()}
+                disabled={
+                  addExpenseMutation.isPending ||
+                  updateExpenseMutation.isPending
+                }
                 data-ocid="adminp.analytics.expense.modal.submit_button"
               >
-                {editTarget ? "Save" : "Add Expense"}
+                {addExpenseMutation.isPending || updateExpenseMutation.isPending
+                  ? "Saving…"
+                  : editTarget
+                    ? "Save"
+                    : "Add Expense"}
               </Button>
               <Button
                 variant="outline"

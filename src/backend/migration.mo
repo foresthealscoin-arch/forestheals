@@ -1,23 +1,32 @@
+import Map "mo:core/Map";
 import List "mo:core/List";
-import Iter "mo:core/Iter";
-import Text "mo:core/Text";
+import Array "mo:core/Array";
+import Principal "mo:core/Principal";
+
+import ProductTypes "types/products";
 import OrderTypes "types/orders";
+import UserTypes "types/users";
+import AdminTypes "types/admin";
 
 module {
-  // ── Old types (inline from .old/src/backend/types/orders.mo) ──────────────
-  type OldAddress = {
-    street : Text;
-    city : Text;
-    state : Text;
-    postalCode : Text;
-    country : Text;
-    gstNumber : ?Text;
-  };
+  // --- Old inline types (from backend.most snapshot) ---
 
   type OldCartItem = {
     productId : Nat;
     quantity : Nat;
     price : Nat;
+  };
+
+  type OldAddress_Order = {
+    fullName : Text;
+    phone : Text;
+    line1 : Text;
+    line2 : ?Text;
+    city : Text;
+    state : Text;
+    pincode : Text;
+    country : Text;
+    gstNumber : ?Text;
   };
 
   type OldOrderStatus = {
@@ -28,86 +37,220 @@ module {
     #cancelled;
   };
 
-  type OldPaymentMethod = {
-    #stripe;
-    #cod;
-  };
-
   type OldOrder = {
     id : Nat;
     userId : Principal;
     items : [OldCartItem];
     totalAmount : Nat;
     status : OldOrderStatus;
-    paymentMethod : OldPaymentMethod;
-    address : OldAddress;
+    paymentMethod : { #stripe; #cod };
+    address : OldAddress_Order;
     createdAt : Int;
+    updatedAt : Int;
     stripePaymentId : ?Text;
     couponCode : ?Text;
     discountAmount : Nat;
   };
 
-  // ── Migration helpers ──────────────────────────────────────────────────────
-
-  // Migrate an old Address to the new Address.
-  // The backend packed fullName|phone|line1|line2 into the `street` field
-  // using pipe separators. Parse that back out; fall back gracefully for
-  // plain old addresses that were not pipe-encoded.
-  func migrateAddress(old : OldAddress) : OrderTypes.Address {
-    let parts = old.street.split(#char '|').toArray();
-    let fullName = if (parts.size() > 0) { parts[0] } else { "" };
-    let phone    = if (parts.size() > 1) { parts[1] } else { "" };
-    let line1    = if (parts.size() > 2) { parts[2] } else { old.street };
-    let line2    = if (parts.size() > 3 and parts[3] != "") { ?parts[3] } else { null };
-    {
-      fullName;
-      phone;
-      line1;
-      line2;
-      city      = old.city;
-      state     = old.state;
-      pincode   = old.postalCode;
-      country   = old.country;
-      gstNumber = old.gstNumber;
-    };
+  type OldProduct = {
+    id : Nat;
+    name : Text;
+    description : Text;
+    price : Nat;
+    category : Text;
+    imageUrl : Text;
+    imageKey : Text;
+    stock : Nat;
+    ratings : Float;
+    reviewCount : Nat;
+    featured : Bool;
+    bestseller : Bool;
+    discount : Nat;
+    bundleIds : [Nat];
   };
 
-  // Migrate an old Order to the new Order.
-  // Adds `updatedAt` (set to `createdAt`) and migrates the Address shape.
-  func migrateOrder(old : OldOrder) : OrderTypes.Order {
-    {
-      id             = old.id;
-      userId         = old.userId;
-      items          = old.items;
-      totalAmount    = old.totalAmount;
-      status         = old.status;
-      paymentMethod  = old.paymentMethod;
-      address        = migrateAddress(old.address);
-      createdAt      = old.createdAt;
-      updatedAt      = old.createdAt; // initialise updatedAt = createdAt
-      stripePaymentId = old.stripePaymentId;
-      couponCode     = old.couponCode;
-      discountAmount = old.discountAmount;
-    };
+  type OldAddress_User = {
+    city : Text;
+    country : Text;
+    isDefault : Bool;
+    postalCode : Text;
+    state : Text;
+    street : Text;
+    tag : Text;
   };
 
-  // ── Actor state shapes ─────────────────────────────────────────────────────
+  type OldUserProfile = {
+    id : Principal;
+    name : Text;
+    email : Text;
+    phone : Text;
+    createdAt : Int;
+    addresses : [OldAddress_User];
+  };
+
+  type OldStoreSettings = {
+    storeName : Text;
+    contactEmail : Text;
+    contactPhone : Text;
+    currency : Text;
+    timezone : Text;
+    gstNumber : Text;
+    gstRate : Nat;
+    freeShippingThreshold : Nat;
+    shippingDefault : Nat;
+    whatsappNumber : Text;
+    instagramUrl : Text;
+    facebookUrl : Text;
+    logoUrl : Text;
+    faviconUrl : Text;
+    seoTitle : Text;
+    seoDescription : Text;
+  };
+
+  // --- Old actor state ---
 
   type OldActor = {
+    cartStore : Map.Map<Principal, List.List<OldCartItem>>;
     orderStore : List.List<OldOrder>;
+    productStore : List.List<OldProduct>;
+    userStore : Map.Map<Principal, OldUserProfile>;
+    storeSettingsState : { var settings : ?OldStoreSettings };
   };
+
+  // --- New actor state ---
 
   type NewActor = {
+    cartStore : Map.Map<Principal, List.List<OrderTypes.CartItem>>;
     orderStore : List.List<OrderTypes.Order>;
+    productStore : List.List<ProductTypes.Product>;
+    userStore : Map.Map<Principal, UserTypes.UserProfile>;
+    var storeSettingsState : { var settings : ?AdminTypes.StoreSettings };
   };
 
-  // ── Public migration entry point ───────────────────────────────────────────
+  // --- Helpers ---
+
+  func migrateCartItem(old : OldCartItem) : OrderTypes.CartItem {
+    { old with productType = null };
+  };
+
+  func migrateOrderStatus(old : OldOrderStatus) : OrderTypes.OrderStatus {
+    switch old {
+      case (#pending) #pending;
+      case (#processing) #processing;
+      case (#shipped) #shipped;
+      case (#delivered) #completed;
+      case (#cancelled) #cancelled;
+    };
+  };
+
+  func migrateOrder(old : OldOrder) : OrderTypes.Order {
+    let newItems = old.items.map(migrateCartItem);
+    {
+      id = old.id;
+      userId = old.userId;
+      items = newItems;
+      totalAmount = old.totalAmount;
+      status = migrateOrderStatus(old.status);
+      paymentMethod = old.paymentMethod;
+      address = old.address;
+      createdAt = old.createdAt;
+      updatedAt = old.updatedAt;
+      stripePaymentId = old.stripePaymentId;
+      couponCode = old.couponCode;
+      discountAmount = old.discountAmount;
+      notes = null;
+    };
+  };
+
+  func migrateProduct(old : OldProduct) : ProductTypes.Product {
+    {
+      old with
+      comparePrice = null;
+      images = [];
+      status = #active;
+    };
+  };
+
+  func migrateUserAddress(old : OldAddress_User) : UserTypes.Address {
+    {
+      id = old.postalCode # "-" # old.street;
+      tag = old.tag;
+      fullName = "";
+      phone = "";
+      street = old.street;
+      city = old.city;
+      state = old.state;
+      pincode = old.postalCode;
+      country = old.country;
+      isDefault = old.isDefault;
+    };
+  };
+
+  func migrateUserProfile(old : OldUserProfile) : UserTypes.UserProfile {
+    let newAddresses = old.addresses.map(migrateUserAddress);
+    {
+      id = old.id;
+      name = old.name;
+      email = old.email;
+      phone = old.phone;
+      phoneVerified = false;
+      city = "";
+      state = "";
+      pincode = "";
+      country = "";
+      createdAt = old.createdAt;
+      addresses = newAddresses;
+    };
+  };
+
+  func migrateStoreSettings(old : OldStoreSettings) : AdminTypes.StoreSettings {
+    old;
+  };
+
+  // --- Migration entry point ---
 
   public func run(old : OldActor) : NewActor {
-    let newOrders = List.empty<OrderTypes.Order>();
-    for (o in old.orderStore.values()) {
-      newOrders.add(migrateOrder(o));
+    // Migrate cartStore: Map<Principal, List<OldCartItem>> → Map<Principal, List<CartItem>>
+    let newCartStore = Map.empty<Principal, List.List<OrderTypes.CartItem>>();
+    for ((userId, oldCart) in old.cartStore.entries()) {
+      let newCart = List.empty<OrderTypes.CartItem>();
+      for (item in oldCart.values()) {
+        newCart.add(migrateCartItem(item));
+      };
+      newCartStore.add(userId, newCart);
     };
-    { orderStore = newOrders };
+
+    // Migrate orderStore: List<OldOrder> → List<Order>
+    let newOrderStore = List.empty<OrderTypes.Order>();
+    for (order in old.orderStore.values()) {
+      newOrderStore.add(migrateOrder(order));
+    };
+
+    // Migrate productStore: List<OldProduct> → List<Product>
+    let newProductStore = List.empty<ProductTypes.Product>();
+    for (product in old.productStore.values()) {
+      newProductStore.add(migrateProduct(product));
+    };
+
+    // Migrate userStore: Map<Principal, OldUserProfile> → Map<Principal, UserProfile>
+    let newUserStore = Map.empty<Principal, UserTypes.UserProfile>();
+    for ((principal, profile) in old.userStore.entries()) {
+      newUserStore.add(principal, migrateUserProfile(profile));
+    };
+
+    // Migrate storeSettingsState
+    let newSettings : ?AdminTypes.StoreSettings = switch (old.storeSettingsState.settings) {
+      case null null;
+      case (?s) ?migrateStoreSettings(s);
+    };
+    let newStoreSettingsState : { var settings : ?AdminTypes.StoreSettings } = { var settings = newSettings };
+
+    {
+      cartStore = newCartStore;
+      orderStore = newOrderStore;
+      productStore = newProductStore;
+      userStore = newUserStore;
+      var storeSettingsState = newStoreSettingsState;
+    };
   };
 };

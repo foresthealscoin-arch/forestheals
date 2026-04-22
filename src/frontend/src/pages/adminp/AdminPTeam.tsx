@@ -14,12 +14,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit2, Plus, ShieldCheck, Trash2, Users } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertCircle,
+  Edit2,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  useAddTeamMember,
+  useAdminTeam,
+  useDeleteTeamMember,
+  useUpdateTeamMember,
+} from "../../hooks/useAdminData";
+import type { TeamMemberView } from "../../services/teamService";
 import { APTag, AdminPLayout } from "./AdminPLayout";
-import type { APTeamMember } from "./adminpStore";
-import { useAdminPStore } from "./adminpStore";
 
 const ROLES = [
   "Super Admin",
@@ -33,54 +47,64 @@ function genId() {
   return `TM-${Date.now().toString(36).toUpperCase()}`;
 }
 
+const EMPTY_MEMBER: TeamMemberView = {
+  id: "",
+  name: "",
+  email: "",
+  role: "Staff",
+  active: true,
+  permissions: [],
+  createdAt: Date.now(),
+};
+
 export default function AdminPTeam() {
-  const team = useAdminPStore((s) => s.team);
-  const addTeamMember = useAdminPStore((s) => s.addTeamMember);
-  const updateTeamMember = useAdminPStore((s) => s.updateTeamMember);
-  const deleteTeamMember = useAdminPStore((s) => s.deleteTeamMember);
+  const { data: team = [], isLoading, isError, refetch } = useAdminTeam();
+  const addMutation = useAddTeamMember();
+  const updateMutation = useUpdateTeamMember();
+  const deleteMutation = useDeleteTeamMember();
 
   const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<APTeamMember | null>(null);
-  const [form, setForm] = useState<Partial<APTeamMember>>({});
+  const [editTarget, setEditTarget] = useState<TeamMemberView | null>(null);
+  const [form, setForm] = useState<TeamMemberView>(EMPTY_MEMBER);
 
   function openAdd() {
     setEditTarget(null);
-    setForm({
-      role: "Staff",
-      status: "Active",
-      joinedAt: new Date().toISOString().split("T")[0],
-      lastLogin: "Never",
-    });
+    setForm({ ...EMPTY_MEMBER, id: genId(), createdAt: Date.now() });
     setShowModal(true);
   }
 
-  function openEdit(m: APTeamMember) {
+  function openEdit(m: TeamMemberView) {
     setEditTarget(m);
     setForm({ ...m });
     setShowModal(true);
   }
 
-  function handleSave() {
-    if (!form.name?.trim() || !form.email?.trim()) {
+  async function handleSave() {
+    if (!form.name.trim() || !form.email.trim()) {
       toast.error("Name and email required");
       return;
     }
-    if (editTarget) {
-      updateTeamMember({ ...editTarget, ...form } as APTeamMember);
-      toast.success("Team member updated");
-    } else {
-      addTeamMember({
-        id: genId(),
-        name: form.name ?? "",
-        email: form.email ?? "",
-        role: form.role ?? "Staff",
-        status: form.status ?? "Active",
-        joinedAt: form.joinedAt ?? "",
-        lastLogin: "Never",
-      });
-      toast.success("Team member added");
+    try {
+      if (editTarget) {
+        await updateMutation.mutateAsync({ id: editTarget.id, member: form });
+        toast.success("Team member updated");
+      } else {
+        await addMutation.mutateAsync(form);
+        toast.success("Team member added");
+      }
+      setShowModal(false);
+    } catch {
+      toast.error("Failed to save team member");
     }
-    setShowModal(false);
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success("Member removed");
+    } catch {
+      toast.error("Failed to remove member");
+    }
   }
 
   const roleColor: Record<string, "green" | "blue" | "yellow" | "gray"> = {
@@ -90,6 +114,30 @@ export default function AdminPTeam() {
     Staff: "gray",
     "Customer Support": "yellow",
   };
+
+  if (isError) {
+    return (
+      <AdminPLayout title="Team Management" subtitle="Manage team members">
+        <div
+          className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center"
+          data-ocid="adminp.team.error_state"
+        >
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-700 font-medium">
+            Failed to load team members
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry
+          </Button>
+        </div>
+      </AdminPLayout>
+    );
+  }
 
   return (
     <AdminPLayout
@@ -106,106 +154,104 @@ export default function AdminPTeam() {
         </Button>
       }
     >
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm" data-ocid="adminp.team.table">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
-                <th className="text-left px-5 py-3 font-medium">Member</th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
-                  Email
-                </th>
-                <th className="text-left px-4 py-3 font-medium">Role</th>
-                <th className="text-left px-4 py-3 font-medium hidden lg:table-cell">
-                  Joined
-                </th>
-                <th className="text-left px-4 py-3 font-medium hidden xl:table-cell">
-                  Last Login
-                </th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
-                  Status
-                </th>
-                <th className="text-right px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {team.map((m, i) => (
-                <tr
-                  key={m.id}
-                  data-ocid={`adminp.team.item.${i + 1}`}
-                  className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
-                >
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                        <ShieldCheck className="w-4 h-4 text-green-700" />
-                      </div>
-                      <span className="font-medium text-gray-900 text-sm">
-                        {m.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">
-                    {m.email}
-                  </td>
-                  <td className="px-4 py-3">
-                    <APTag label={m.role} color={roleColor[m.role] ?? "gray"} />
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-gray-500 text-xs">
-                    {m.joinedAt}
-                  </td>
-                  <td className="px-4 py-3 hidden xl:table-cell text-gray-500 text-xs">
-                    {m.lastLogin}
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <APTag
-                      label={m.status}
-                      color={m.status === "Active" ? "green" : "gray"}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => openEdit(m)}
-                        data-ocid={`adminp.team.item.${i + 1}.edit_button`}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
-                        onClick={() => {
-                          deleteTeamMember(m.id);
-                          toast.success("Member removed");
-                        }}
-                        data-ocid={`adminp.team.item.${i + 1}.delete_button`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {team.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="py-12 text-center"
-                    data-ocid="adminp.team.empty_state"
-                  >
-                    <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-400 text-sm">No team members</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {isLoading ? (
+        <div className="space-y-2" data-ocid="adminp.team.loading_state">
+          {["a", "b", "c"].map((k) => (
+            <Skeleton key={k} className="h-14 w-full rounded-xl" />
+          ))}
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-ocid="adminp.team.table">
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
+                  <th className="text-left px-5 py-3 font-medium">Member</th>
+                  <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
+                    Email
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium">Role</th>
+                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
+                    Status
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {team.map((m, i) => (
+                  <tr
+                    key={m.id}
+                    data-ocid={`adminp.team.item.${i + 1}`}
+                    className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
+                  >
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                          <ShieldCheck className="w-4 h-4 text-green-700" />
+                        </div>
+                        <span className="font-medium text-gray-900 text-sm">
+                          {m.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">
+                      {m.email}
+                    </td>
+                    <td className="px-4 py-3">
+                      <APTag
+                        label={m.role}
+                        color={roleColor[m.role] ?? "gray"}
+                      />
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <APTag
+                        label={m.active ? "Active" : "Inactive"}
+                        color={m.active ? "green" : "gray"}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => openEdit(m)}
+                          data-ocid={`adminp.team.item.${i + 1}.edit_button`}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => void handleDelete(m.id)}
+                          data-ocid={`adminp.team.item.${i + 1}.delete_button`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {team.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-12 text-center"
+                      data-ocid="adminp.team.empty_state"
+                    >
+                      <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">
+                        No team members — add your first team member
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
@@ -222,7 +268,7 @@ export default function AdminPTeam() {
             <div className="space-y-1.5">
               <Label>Full Name *</Label>
               <Input
-                value={form.name ?? ""}
+                value={form.name}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
@@ -234,7 +280,7 @@ export default function AdminPTeam() {
               <Label>Email *</Label>
               <Input
                 type="email"
-                value={form.email ?? ""}
+                value={form.email}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, email: e.target.value }))
                 }
@@ -246,10 +292,8 @@ export default function AdminPTeam() {
               <div className="space-y-1.5">
                 <Label>Role</Label>
                 <Select
-                  value={form.role ?? "Staff"}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, role: v as APTeamMember["role"] }))
-                  }
+                  value={form.role}
+                  onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}
                 >
                   <SelectTrigger data-ocid="adminp.team.modal.role_select">
                     <SelectValue />
@@ -266,20 +310,17 @@ export default function AdminPTeam() {
               <div className="space-y-1.5">
                 <Label>Status</Label>
                 <Select
-                  value={form.status ?? "Active"}
+                  value={form.active ? "active" : "inactive"}
                   onValueChange={(v) =>
-                    setForm((f) => ({
-                      ...f,
-                      status: v as APTeamMember["status"],
-                    }))
+                    setForm((f) => ({ ...f, active: v === "active" }))
                   }
                 >
                   <SelectTrigger data-ocid="adminp.team.modal.status_select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -287,10 +328,15 @@ export default function AdminPTeam() {
             <div className="flex gap-2 pt-1">
               <Button
                 className="flex-1 bg-[#004a38] hover:bg-[#003a2c]"
-                onClick={handleSave}
+                onClick={() => void handleSave()}
+                disabled={addMutation.isPending || updateMutation.isPending}
                 data-ocid="adminp.team.modal.submit_button"
               >
-                {editTarget ? "Save" : "Add Member"}
+                {addMutation.isPending || updateMutation.isPending
+                  ? "Saving…"
+                  : editTarget
+                    ? "Save"
+                    : "Add Member"}
               </Button>
               <Button
                 variant="outline"

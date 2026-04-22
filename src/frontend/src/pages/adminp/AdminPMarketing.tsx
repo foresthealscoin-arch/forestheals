@@ -14,63 +14,135 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Edit2, Megaphone, Plus, Tag, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Edit2,
+  Megaphone,
+  Plus,
+  RefreshCw,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  useAdminCoupons,
+  useCreateAdminCoupon,
+  useDeleteAdminCoupon,
+  useToggleCouponActive,
+  useUpdateAdminCoupon,
+} from "../../hooks/useAdminData";
+import type { AdminCouponView } from "../../services/couponService";
 import { APTag, AdminPLayout } from "./AdminPLayout";
-import type { APCoupon } from "./adminpStore";
-import { useAdminPStore } from "./adminpStore";
+
+const DISCOUNT_TYPES = ["percentage", "flat", "free_shipping"] as const;
+const DISCOUNT_TYPE_LABELS: Record<string, string> = {
+  percentage: "Percentage",
+  flat: "Flat",
+  free_shipping: "Free Shipping",
+};
 
 function genId() {
   return `CPN-${Date.now().toString(36).toUpperCase()}`;
 }
 
+const EMPTY_COUPON: AdminCouponView = {
+  id: "",
+  code: "",
+  discountType: "percentage",
+  discountValue: 10,
+  minCartValue: 0,
+  maxUses: 100,
+  usedCount: 0,
+  active: true,
+  description: "",
+  createdAt: Date.now(),
+};
+
 export default function AdminPMarketing() {
-  const coupons = useAdminPStore((s) => s.coupons);
-  const addCoupon = useAdminPStore((s) => s.addCoupon);
-  const updateCoupon = useAdminPStore((s) => s.updateCoupon);
-  const deleteCoupon = useAdminPStore((s) => s.deleteCoupon);
+  const { data: coupons = [], isLoading, isError, refetch } = useAdminCoupons();
+  const createMutation = useCreateAdminCoupon();
+  const updateMutation = useUpdateAdminCoupon();
+  const deleteMutation = useDeleteAdminCoupon();
+  const toggleMutation = useToggleCouponActive();
 
   const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<APCoupon | null>(null);
-  const [form, setForm] = useState<Partial<APCoupon>>({});
+  const [editTarget, setEditTarget] = useState<AdminCouponView | null>(null);
+  const [form, setForm] = useState<AdminCouponView>(EMPTY_COUPON);
 
   function openAdd() {
     setEditTarget(null);
-    setForm({ type: "Percentage", active: true, usedCount: 0 });
+    setForm({ ...EMPTY_COUPON, id: genId() });
     setShowModal(true);
   }
 
-  function openEdit(c: APCoupon) {
+  function openEdit(c: AdminCouponView) {
     setEditTarget(c);
     setForm({ ...c });
     setShowModal(true);
   }
 
-  function handleSave() {
-    if (!form.code?.trim()) {
+  async function handleSave() {
+    if (!form.code.trim()) {
       toast.error("Coupon code required");
       return;
     }
-    if (editTarget) {
-      updateCoupon({ ...editTarget, ...form } as APCoupon);
-      toast.success("Coupon updated");
-    } else {
-      addCoupon({
-        id: genId(),
-        code: form.code ?? "",
-        type: form.type ?? "Percentage",
-        value: form.value ?? 0,
-        minCart: form.minCart ?? 0,
-        maxUses: form.maxUses ?? 100,
-        usedCount: 0,
-        active: form.active ?? true,
-        expiry: form.expiry ?? "",
-      });
-      toast.success("Coupon created!");
+    try {
+      if (editTarget) {
+        await updateMutation.mutateAsync({ id: editTarget.id, coupon: form });
+        toast.success("Coupon updated");
+      } else {
+        await createMutation.mutateAsync(form);
+        toast.success("Coupon created!");
+      }
+      setShowModal(false);
+    } catch {
+      toast.error("Failed to save coupon");
     }
-    setShowModal(false);
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success("Coupon deleted");
+    } catch {
+      toast.error("Failed to delete coupon");
+    }
+  }
+
+  async function handleToggle(id: string) {
+    try {
+      await toggleMutation.mutateAsync(id);
+    } catch {
+      toast.error("Failed to toggle coupon");
+    }
+  }
+
+  if (isError) {
+    return (
+      <AdminPLayout
+        title="Marketing & Coupons"
+        subtitle="Manage promotions and discounts"
+      >
+        <div
+          className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center"
+          data-ocid="adminp.marketing.error_state"
+        >
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-700 font-medium">Failed to load coupons</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry
+          </Button>
+        </div>
+      </AdminPLayout>
+    );
   }
 
   return (
@@ -88,7 +160,7 @@ export default function AdminPMarketing() {
         </Button>
       }
     >
-      {/* Marketing Overview Cards */}
+      {/* Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           {
@@ -144,117 +216,114 @@ export default function AdminPMarketing() {
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900 text-sm">All Coupons</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table
-            className="w-full text-sm"
-            data-ocid="adminp.marketing.coupons_table"
-          >
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
-                <th className="text-left px-5 py-3 font-medium">Code</th>
-                <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
-                  Type
-                </th>
-                <th className="text-right px-4 py-3 font-medium">Value</th>
-                <th className="text-right px-4 py-3 font-medium hidden md:table-cell">
-                  Min Cart
-                </th>
-                <th className="text-center px-4 py-3 font-medium hidden lg:table-cell">
-                  Used / Max
-                </th>
-                <th className="text-left px-4 py-3 font-medium hidden md:table-cell">
-                  Expiry
-                </th>
-                <th className="text-center px-4 py-3 font-medium">Active</th>
-                <th className="text-right px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {coupons.map((c, i) => (
-                <tr
-                  key={c.id}
-                  data-ocid={`adminp.marketing.coupon.item.${i + 1}`}
-                  className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
-                >
-                  <td className="px-5 py-3 font-mono font-bold text-[#004a38] text-sm">
-                    {c.code}
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <APTag
-                      label={c.type}
-                      color={
-                        c.type === "Percentage"
-                          ? "blue"
-                          : c.type === "Flat"
-                            ? "green"
-                            : "yellow"
-                      }
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                    {c.type === "Percentage"
-                      ? `${c.value}%`
-                      : c.type === "Flat"
-                        ? `₹${c.value}`
-                        : "Free"}
-                  </td>
-                  <td className="px-4 py-3 text-right hidden md:table-cell text-gray-500 text-xs">
-                    ₹{c.minCart}
-                  </td>
-                  <td className="px-4 py-3 text-center hidden lg:table-cell text-xs text-gray-500">
-                    {c.usedCount} / {c.maxUses}
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">
-                    {c.expiry || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <Switch
-                      checked={c.active}
-                      onCheckedChange={(v) => updateCoupon({ ...c, active: v })}
-                      data-ocid={`adminp.marketing.coupon.item.${i + 1}.active_switch`}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => openEdit(c)}
-                        data-ocid={`adminp.marketing.coupon.item.${i + 1}.edit_button`}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
-                        onClick={() => {
-                          deleteCoupon(c.id);
-                          toast.success("Coupon deleted");
-                        }}
-                        data-ocid={`adminp.marketing.coupon.item.${i + 1}.delete_button`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </td>
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {["a", "b", "c"].map((k) => (
+              <Skeleton key={k} className="h-12 w-full rounded" />
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table
+              className="w-full text-sm"
+              data-ocid="adminp.marketing.coupons_table"
+            >
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide border-b border-gray-100">
+                  <th className="text-left px-5 py-3 font-medium">Code</th>
+                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">
+                    Type
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium">Value</th>
+                  <th className="text-right px-4 py-3 font-medium hidden md:table-cell">
+                    Min Cart
+                  </th>
+                  <th className="text-center px-4 py-3 font-medium hidden lg:table-cell">
+                    Used / Max
+                  </th>
+                  <th className="text-center px-4 py-3 font-medium">Active</th>
+                  <th className="text-right px-4 py-3 font-medium">Actions</th>
                 </tr>
-              ))}
-              {coupons.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-10 text-center text-gray-400 text-sm"
-                    data-ocid="adminp.marketing.coupons.empty_state"
+              </thead>
+              <tbody>
+                {coupons.map((c, i) => (
+                  <tr
+                    key={c.id}
+                    data-ocid={`adminp.marketing.coupon.item.${i + 1}`}
+                    className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
                   >
-                    No coupons created yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <td className="px-5 py-3 font-mono font-bold text-[#004a38] text-sm">
+                      {c.code}
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <APTag
+                        label={
+                          DISCOUNT_TYPE_LABELS[c.discountType] ?? c.discountType
+                        }
+                        color="blue"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                      {c.discountType === "percentage"
+                        ? `${c.discountValue}%`
+                        : c.discountType === "flat"
+                          ? `₹${c.discountValue}`
+                          : "Free"}
+                    </td>
+                    <td className="px-4 py-3 text-right hidden md:table-cell text-gray-500 text-xs">
+                      ₹{c.minCartValue}
+                    </td>
+                    <td className="px-4 py-3 text-center hidden lg:table-cell text-xs text-gray-500">
+                      {c.usedCount} / {c.maxUses}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Switch
+                        checked={c.active}
+                        onCheckedChange={() => void handleToggle(c.id)}
+                        disabled={toggleMutation.isPending}
+                        data-ocid={`adminp.marketing.coupon.item.${i + 1}.active_switch`}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => openEdit(c)}
+                          data-ocid={`adminp.marketing.coupon.item.${i + 1}.edit_button`}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => void handleDelete(c.id)}
+                          data-ocid={`adminp.marketing.coupon.item.${i + 1}.delete_button`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {coupons.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="py-10 text-center text-gray-400 text-sm"
+                      data-ocid="adminp.marketing.coupons.empty_state"
+                    >
+                      No coupons created yet. Create your first coupon to start
+                      promoting!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Modal */}
@@ -272,7 +341,7 @@ export default function AdminPMarketing() {
             <div className="space-y-1.5">
               <Label>Coupon Code *</Label>
               <Input
-                value={form.code ?? ""}
+                value={form.code}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))
                 }
@@ -284,18 +353,20 @@ export default function AdminPMarketing() {
               <div className="space-y-1.5">
                 <Label>Type</Label>
                 <Select
-                  value={form.type ?? "Percentage"}
+                  value={form.discountType}
                   onValueChange={(v) =>
-                    setForm((f) => ({ ...f, type: v as APCoupon["type"] }))
+                    setForm((f) => ({ ...f, discountType: v }))
                   }
                 >
                   <SelectTrigger data-ocid="adminp.marketing.modal.type_select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Percentage">Percentage</SelectItem>
-                    <SelectItem value="Flat">Flat</SelectItem>
-                    <SelectItem value="Free Shipping">Free Shipping</SelectItem>
+                    {DISCOUNT_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {DISCOUNT_TYPE_LABELS[t]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -304,9 +375,12 @@ export default function AdminPMarketing() {
                 <Input
                   type="number"
                   min={0}
-                  value={form.value ?? ""}
+                  value={form.discountValue || ""}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, value: Number(e.target.value) }))
+                    setForm((f) => ({
+                      ...f,
+                      discountValue: Number(e.target.value),
+                    }))
                   }
                   data-ocid="adminp.marketing.modal.value_input"
                 />
@@ -318,9 +392,12 @@ export default function AdminPMarketing() {
                 <Input
                   type="number"
                   min={0}
-                  value={form.minCart ?? ""}
+                  value={form.minCartValue || ""}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, minCart: Number(e.target.value) }))
+                    setForm((f) => ({
+                      ...f,
+                      minCartValue: Number(e.target.value),
+                    }))
                   }
                   data-ocid="adminp.marketing.modal.mincart_input"
                 />
@@ -330,7 +407,7 @@ export default function AdminPMarketing() {
                 <Input
                   type="number"
                   min={1}
-                  value={form.maxUses ?? ""}
+                  value={form.maxUses || ""}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, maxUses: Number(e.target.value) }))
                   }
@@ -339,20 +416,19 @@ export default function AdminPMarketing() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Expiry Date</Label>
+              <Label>Description</Label>
               <Input
-                type="date"
-                value={form.expiry ?? ""}
+                value={form.description}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, expiry: e.target.value }))
+                  setForm((f) => ({ ...f, description: e.target.value }))
                 }
-                data-ocid="adminp.marketing.modal.expiry_input"
+                placeholder="Describe this coupon…"
               />
             </div>
             <div className="flex items-center gap-3">
               <Switch
                 id="ap-coupon-active"
-                checked={form.active ?? true}
+                checked={form.active}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, active: v }))}
                 data-ocid="adminp.marketing.modal.active_switch"
               />
@@ -361,10 +437,15 @@ export default function AdminPMarketing() {
             <div className="flex gap-2 pt-1">
               <Button
                 className="flex-1 bg-[#004a38] hover:bg-[#003a2c]"
-                onClick={handleSave}
+                onClick={() => void handleSave()}
+                disabled={createMutation.isPending || updateMutation.isPending}
                 data-ocid="adminp.marketing.modal.submit_button"
               >
-                {editTarget ? "Save Changes" : "Create Coupon"}
+                {createMutation.isPending || updateMutation.isPending
+                  ? "Saving…"
+                  : editTarget
+                    ? "Save Changes"
+                    : "Create Coupon"}
               </Button>
               <Button
                 variant="outline"

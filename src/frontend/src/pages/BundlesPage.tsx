@@ -1,60 +1,63 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Check, CheckCircle, ShoppingBag, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useBundles } from "../hooks/useProducts";
 import { formatPrice, getDiscountedPrice } from "../lib/formatters";
-import { PRODUCTS_SEED_DATA } from "../lib/seedData";
 import { useCartStore } from "../stores/useCartStore";
+import type { Product } from "../types";
 
-interface Bundle {
-  id: string;
-  name: string;
-  tagline: string;
-  productIds: number[];
-  concern: string;
-  emoji: string;
-}
+const DISCOUNT = 15;
 
-const BUNDLES: Bundle[] = [
+// Pre-defined bundle groupings — matched by category/name patterns when backend
+// doesn't return structured bundle data. Bundles page shows the first 2 groups.
+const BUNDLE_CONFIGS = [
   {
     id: "skincare",
     name: "Radiant Skin Bundle",
     tagline: "Deep cleanse, brighten & protect your skin naturally",
-    productIds: [7, 4, 6], // Multani Mitti, Neem, Amla
     concern: "Skin Concerns",
     emoji: "✨",
+    keywords: ["multani", "neem", "amla"],
   },
   {
     id: "haircare",
     name: "Luscious Hair Bundle",
     tagline: "Nourish follicles, reduce hair fall & add natural shine",
-    productIds: [2, 6, 11], // Brahmi, Amla, Shatavari
     concern: "Hair Care",
     emoji: "💇",
+    keywords: ["brahmi", "amla", "shatavari"],
   },
 ];
 
-const DISCOUNT = 15;
-
-type SeedProduct = (typeof PRODUCTS_SEED_DATA)[0];
-
-function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
+function BundleCard({
+  name,
+  tagline,
+  concern,
+  emoji,
+  products,
+  index,
+}: {
+  name: string;
+  tagline: string;
+  concern: string;
+  emoji: string;
+  products: Product[];
+  index: number;
+}) {
   const addItem = useCartStore((s) => s.addItem);
   const [isAdded, setIsAdded] = useState(false);
-
-  const products = bundle.productIds
-    .map((id) => PRODUCTS_SEED_DATA.find((p) => p.id === id))
-    .filter((p): p is SeedProduct => p !== undefined);
 
   const totalOriginal = products.reduce((sum, p) => sum + p.price, 0);
   const bundlePrice = getDiscountedPrice(totalOriginal, DISCOUNT);
   const savings = totalOriginal - bundlePrice;
 
   const handleAddBundle = () => {
-    if (isAdded) return;
+    if (isAdded || products.length === 0) return;
     for (const p of products) {
       addItem({
         productId: p.id,
@@ -62,7 +65,7 @@ function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
         price: Math.round(p.price * (1 - DISCOUNT / 100)),
       });
     }
-    toast.success(`${bundle.name} added to cart`, { duration: 3000 });
+    toast.success(`${name} added to cart`, { duration: 3000 });
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 1500);
   };
@@ -83,7 +86,6 @@ function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
             Save {DISCOUNT}%
           </Badge>
         </div>
-        {/* Centered product images with "+" separators */}
         <div className="flex items-center justify-center gap-2 sm:gap-3 w-full">
           {products.map((product, i) => (
             <div key={product.id} className="relative flex items-center">
@@ -101,6 +103,9 @@ function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
                   alt={product.name}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
                 />
               </div>
               {i < products.length - 1 && (
@@ -116,15 +121,13 @@ function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
       {/* Info */}
       <div className="p-5 sm:p-6">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xl">{bundle.emoji}</span>
+          <span className="text-xl">{emoji}</span>
           <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-            {bundle.concern}
+            {concern}
           </span>
         </div>
-        <h3 className="text-xl font-bold text-foreground mt-1 mb-1">
-          {bundle.name}
-        </h3>
-        <p className="text-sm text-muted-foreground mb-4">{bundle.tagline}</p>
+        <h3 className="text-xl font-bold text-foreground mt-1 mb-1">{name}</h3>
+        <p className="text-sm text-muted-foreground mb-4">{tagline}</p>
 
         {/* Included items */}
         <ul className="space-y-1.5 mb-5">
@@ -170,6 +173,7 @@ function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
               isAdded && "bg-green-600 hover:bg-green-600",
             )}
             onClick={handleAddBundle}
+            disabled={products.length === 0}
             data-ocid={`bundles.add_bundle.${index + 1}`}
           >
             {isAdded ? (
@@ -191,6 +195,21 @@ function BundleCard({ bundle, index }: { bundle: Bundle; index: number }) {
 }
 
 export default function BundlesPage() {
+  const { data: allProducts = [], isLoading } = useBundles();
+
+  // Build bundles from backend products by matching name keywords
+  const bundles = BUNDLE_CONFIGS.map((config) => {
+    // Try to match backend products to this bundle's keywords
+    const matched = config.keywords
+      .map((kw) =>
+        allProducts.find((p) =>
+          p.name.toLowerCase().includes(kw.toLowerCase()),
+        ),
+      )
+      .filter((p): p is Product => p !== undefined);
+    return { ...config, products: matched };
+  }).filter((b) => b.products.length >= 2);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
@@ -230,39 +249,62 @@ export default function BundlesPage() {
           </p>
         </div>
 
-        {/* Grid: 1 col on mobile, 2 on md+ — always centered */}
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 justify-items-center mb-8"
-          data-ocid="bundles.list"
-        >
-          {BUNDLES.map((bundle, i) => (
-            <BundleCard key={bundle.id} bundle={bundle} index={i} />
-          ))}
-
-          {/* Coming Soon — centered */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="glass-card rounded-3xl border-2 border-dashed border-border p-8 sm:p-10 flex flex-col items-center justify-center text-center shadow-soft w-full"
-            data-ocid="bundles.coming_soon.card"
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            {[1, 2].map((i) => (
+              <div key={i} className="glass-card rounded-3xl overflow-hidden">
+                <Skeleton className="h-52 w-full" />
+                <div className="p-6 space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 justify-items-center mb-8"
+            data-ocid="bundles.list"
           >
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">
-              More Coming Soon
-            </h3>
-            <p className="text-muted-foreground text-sm max-w-xs">
-              Immunity, Energy Boost, and Seasonal Wellness bundles are being
-              curated for you.
-            </p>
-            <Badge className="mt-4 bg-muted text-muted-foreground">
-              Coming Q1 2026
-            </Badge>
-          </motion.div>
-        </div>
+            {bundles.map((bundle, i) => (
+              <BundleCard
+                key={bundle.id}
+                name={bundle.name}
+                tagline={bundle.tagline}
+                concern={bundle.concern}
+                emoji={bundle.emoji}
+                products={bundle.products}
+                index={i}
+              />
+            ))}
+
+            {/* Coming Soon */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="glass-card rounded-3xl border-2 border-dashed border-border p-8 sm:p-10 flex flex-col items-center justify-center text-center shadow-soft w-full"
+              data-ocid="bundles.coming_soon.card"
+            >
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                More Coming Soon
+              </h3>
+              <p className="text-muted-foreground text-sm max-w-xs">
+                Immunity, Energy Boost, and Seasonal Wellness bundles are being
+                curated for you.
+              </p>
+              <Badge className="mt-4 bg-muted text-muted-foreground">
+                Coming Q1 2026
+              </Badge>
+            </motion.div>
+          </div>
+        )}
 
         {/* Info strip */}
         <motion.div

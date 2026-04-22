@@ -16,25 +16,23 @@ export function useCart() {
   const { actor, isFetching } = useBackendActor();
   const qc = useQueryClient();
 
-  // For logged-in users, try to sync with backend cart
+  // On mount for logged-in users: fetch backend cart and sync into local store
   useQuery({
     queryKey: ["cart", "backend"],
     queryFn: async () => {
       if (!actor || isFetching || !isLoggedIn) return null;
-      try {
-        const items = await actor.getCart();
-        // Sync backend cart items into local store
-        for (const item of items) {
-          cartStore.addItem({
-            productId: Number(item.productId),
-            quantity: Number(item.quantity),
-            price: Number(item.price),
-          });
-        }
-        return items;
-      } catch {
-        return null;
+      const items = await actor.getCart();
+      if (items.length === 0) return null;
+      // Replace local cart with backend cart (backend is source of truth)
+      cartStore.clearCart();
+      for (const item of items) {
+        cartStore.addItem({
+          productId: Number(item.productId),
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        });
       }
+      return items;
     },
     enabled: !!actor && !isFetching && isLoggedIn,
     staleTime: 30 * 1000,
@@ -57,7 +55,7 @@ export function useCart() {
         );
         void qc.invalidateQueries({ queryKey: ["cart"] });
       } catch {
-        // local cart already updated, ignore backend error
+        // local cart already updated — non-critical
       }
     }
   };
@@ -70,7 +68,7 @@ export function useCart() {
         await actor.removeFromCart(BigInt(productId));
         void qc.invalidateQueries({ queryKey: ["cart"] });
       } catch {
-        // ignore
+        // non-critical
       }
     }
   };
@@ -82,7 +80,7 @@ export function useCart() {
         await actor.updateCartQuantity(BigInt(productId), BigInt(quantity));
         void qc.invalidateQueries({ queryKey: ["cart"] });
       } catch {
-        // ignore
+        // non-critical
       }
     }
   };
@@ -94,7 +92,7 @@ export function useCart() {
         await actor.clearCart();
         void qc.invalidateQueries({ queryKey: ["cart"] });
       } catch {
-        // ignore
+        // non-critical
       }
     }
   };
@@ -120,38 +118,14 @@ export function useValidateCoupon() {
 
   return useMutation({
     mutationFn: async (code: string) => {
-      if (actor && !isFetching) {
-        try {
-          const result = await actor.validateCoupon(code.toUpperCase());
-          return {
-            valid: result.valid,
-            discountPercent: Number(result.discountPercent),
-            message: result.message,
-          };
-        } catch {
-          // fallback
-        }
+      if (!actor || isFetching) {
+        throw new Error("Backend not connected");
       }
-      // Static fallback coupons
-      const coupons: Record<string, number> = {
-        FOREST10: 10,
-        HEAL20: 20,
-        NATURE15: 15,
-        WELCOME5: 5,
-        FIRST10: 10,
-      };
-      const discount = coupons[code.toUpperCase()];
-      if (discount) {
-        return {
-          valid: true,
-          discountPercent: discount,
-          message: `${discount}% discount applied!`,
-        };
-      }
+      const result = await actor.validateCoupon(code.toUpperCase());
       return {
-        valid: false,
-        discountPercent: 0,
-        message: "Invalid coupon code",
+        valid: result.valid,
+        discountPercent: Number(result.discountPercent),
+        message: result.message,
       };
     },
     onSuccess: (data, code) => {
@@ -165,6 +139,9 @@ export function useValidateCoupon() {
       } else {
         toast.error(data.message);
       }
+    },
+    onError: () => {
+      toast.error("Failed to validate coupon. Please try again.");
     },
   });
 }

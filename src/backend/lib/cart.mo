@@ -30,7 +30,7 @@ module {
       } else { item };
     });
     if (not found) {
-      cart.add({ productId; quantity; price });
+      cart.add({ productId; quantity; price; productType = null });
     };
   };
 

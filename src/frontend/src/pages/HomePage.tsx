@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowDown,
@@ -20,8 +22,8 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 import { useFeaturedProducts } from "../hooks/useProducts";
-import { PRODUCTS_SEED_DATA } from "../lib/seedData";
 import { useCartStore } from "../stores/useCartStore";
 import type { Product } from "../types";
 
@@ -210,7 +212,7 @@ function HeroSection() {
         >
           <div className="relative rounded-3xl overflow-hidden shadow-elevated border border-secondary/10">
             <img
-              src={PRODUCTS_SEED_DATA[0].imageUrl}
+              src="/assets/products/organic_ashwagandha_forestheals.jpg"
               alt="Forestheals premium Ayurvedic products"
               className="w-full aspect-[16/7] object-cover object-center"
             />
@@ -368,12 +370,8 @@ function BestSellerAddButton({ product }: { product: Product }) {
 
 // ─── Best Sellers Section ─────────────────────────────────────────────────────
 function BestSellersSection() {
-  const { data: featured = [] } = useFeaturedProducts();
-  const displayProducts = (
-    featured.length > 0
-      ? featured
-      : PRODUCTS_SEED_DATA.filter((p) => p.featured)
-  ).slice(0, 8);
+  const { data: featured = [], isLoading } = useFeaturedProducts();
+  const displayProducts = featured.slice(0, 8);
 
   return (
     <section
@@ -404,65 +402,101 @@ function BestSellersSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
-          {displayProducts.map((product, i) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.35, delay: i * 0.06 }}
-              className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
-              data-ocid={`best_sellers.product.${i + 1}`}
-            >
-              <Link to="/products/$id" params={{ id: String(product.id) }}>
-                <div className="overflow-hidden" style={{ height: "160px" }}>
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "/assets/products/brahmi_forestheals.jpg";
-                    }}
-                  />
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+            {Array.from({ length: 8 }, (_, i) => `skel-${i}`).map((k) => (
+              <div
+                key={k}
+                className="bg-card rounded-xl overflow-hidden shadow-sm"
+              >
+                <Skeleton className="h-40 w-full" />
+                <div className="p-3 sm:p-4 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-8 w-full" />
                 </div>
-                <div className="p-3 sm:p-4">
-                  <h3
-                    className="font-semibold text-xs sm:text-sm leading-snug mb-1 line-clamp-2 group-hover:text-primary transition-colors"
-                    style={{ color: "#004a38" }}
-                  >
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center gap-1 mb-2 sm:mb-3">
-                    <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-medium text-foreground">
-                      {product.ratings.toFixed(1)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      ({product.reviewCount})
-                    </span>
+              </div>
+            ))}
+          </div>
+        ) : displayProducts.length === 0 ? (
+          <div
+            className="text-center py-16 text-muted-foreground"
+            data-ocid="best_sellers.empty_state"
+          >
+            <p className="text-sm">
+              Products are loading. Please check back shortly.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+            {displayProducts.map((product, i) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: i * 0.06 }}
+                className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+                data-ocid={`best_sellers.product.${i + 1}`}
+              >
+                <Link to="/products/$id" params={{ id: String(product.id) }}>
+                  <div className="overflow-hidden" style={{ height: "160px" }}>
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                      onError={(e) => {
+                        // Replace broken image with a styled div placeholder
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          e.currentTarget.style.display = "none";
+                          const placeholder = document.createElement("div");
+                          placeholder.className =
+                            "w-full h-full bg-primary/10 flex items-center justify-center";
+                          placeholder.innerHTML =
+                            '<span class="text-primary/30 text-xs font-semibold">Forestheals</span>';
+                          parent.appendChild(placeholder);
+                        }
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center justify-between gap-1 sm:gap-2">
-                    <span
-                      className="font-bold text-sm sm:text-base"
+                  <div className="p-3 sm:p-4">
+                    <h3
+                      className="font-semibold text-xs sm:text-sm leading-snug mb-1 line-clamp-2 group-hover:text-primary transition-colors"
                       style={{ color: "#004a38" }}
                     >
-                      ₹
-                      {product.discount > 0
-                        ? Math.round(
-                            product.price * (1 - product.discount / 100),
-                          )
-                        : product.price}
-                    </span>
-                    <BestSellerAddButton product={product} />
+                      {product.name}
+                    </h3>
+                    <div className="flex items-center gap-1 mb-2 sm:mb-3">
+                      <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
+                      <span className="text-xs font-medium text-foreground">
+                        {product.ratings.toFixed(1)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({product.reviewCount})
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-1 sm:gap-2">
+                      <span
+                        className="font-bold text-sm sm:text-base"
+                        style={{ color: "#004a38" }}
+                      >
+                        ₹
+                        {product.discount > 0
+                          ? Math.round(
+                              product.price * (1 - product.discount / 100),
+                            )
+                          : product.price}
+                      </span>
+                      <BestSellerAddButton product={product} />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         <div className="text-center mt-10 sm:mt-12">
           <Link to="/products">
@@ -755,7 +789,7 @@ type BundleConfig = {
   id: string;
   name: string;
   tagline: string;
-  productIds: number[];
+  images: string[];
   totalPrice: number;
   ocid: string;
 };
@@ -765,7 +799,11 @@ const BUNDLES: BundleConfig[] = [
     id: "skincare",
     name: "Skincare Bundle",
     tagline: "Glow from within, naturally",
-    productIds: [4, 7, 6],
+    images: [
+      "/assets/products/multani_mitti_forestheals.jpg",
+      "/assets/products/neem_powder_forestheals.jpg",
+      "/assets/products/amla_powder_forestheals.jpg",
+    ],
     totalPrice: 199 + 149 + 219,
     ocid: "bundle.skincare",
   },
@@ -773,17 +811,17 @@ const BUNDLES: BundleConfig[] = [
     id: "haircare",
     name: "Haircare Bundle",
     tagline: "Nourish every strand",
-    productIds: [2, 6, 11],
+    images: [
+      "/assets/products/brahmi_forestheals.jpg",
+      "/assets/products/amla_powder_forestheals.jpg",
+      "/assets/products/shatavari_forestheals.jpg",
+    ],
     totalPrice: 249 + 219 + 349,
     ocid: "bundle.haircare",
   },
 ];
 
 function BundleCard({ bundle }: { bundle: BundleConfig }) {
-  const products = bundle.productIds
-    .map((id) => PRODUCTS_SEED_DATA.find((p) => p.id === id))
-    .filter((p): p is (typeof PRODUCTS_SEED_DATA)[number] => p !== undefined);
-
   const discountedPrice = Math.round(bundle.totalPrice * 0.85);
 
   return (
@@ -798,17 +836,20 @@ function BundleCard({ bundle }: { bundle: BundleConfig }) {
     >
       {/* Overlapping images */}
       <div className="relative h-44 sm:h-52 bg-gradient-to-br from-muted to-secondary/10 flex items-center justify-center overflow-hidden">
-        {products.map((p, i) => (
+        {bundle.images.map((src, i) => (
           <img
-            key={p.id}
-            src={p.imageUrl}
-            alt={p.name}
+            key={`${bundle.id}-img-${i}`}
+            src={src}
+            alt={`${bundle.name} product ${i + 1}`}
             className="absolute w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 object-cover rounded-2xl shadow-elevated border-2 border-card"
             style={{
               left: `${18 + i * 26}%`,
               top: "50%",
               transform: `translateY(-50%) rotate(${(i - 1) * 9}deg)`,
               zIndex: i + 1,
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
             }}
           />
         ))}
@@ -821,17 +862,7 @@ function BundleCard({ bundle }: { bundle: BundleConfig }) {
         <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-smooth">
           {bundle.name}
         </h3>
-        <p className="text-sm text-muted-foreground mb-3">{bundle.tagline}</p>
-        <div className="flex flex-wrap gap-1.5 mb-5">
-          {products.map((p) => (
-            <span
-              key={p.id}
-              className="text-xs bg-muted text-muted-foreground rounded-full px-2.5 py-0.5"
-            >
-              {p.name.split(" ")[0]}
-            </span>
-          ))}
-        </div>
+        <p className="text-sm text-muted-foreground mb-5">{bundle.tagline}</p>
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xl sm:text-2xl font-bold text-primary">
@@ -1335,18 +1366,26 @@ function FinalCTASection() {
 function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const { actor } = useActor(createActor);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
-    await new Promise<void>((r) => setTimeout(r, 800));
-    setLoading(false);
-    setEmail("");
-    toast.success("Welcome to the Forestheals community! 🌿", {
-      description: "You'll receive exclusive wellness tips and offers.",
-      duration: 5000,
-    });
+    try {
+      if (actor) {
+        await actor.subscribeEmail(email.trim());
+      }
+      setEmail("");
+      toast.success("Welcome to the Forestheals community! 🌿", {
+        description: "You'll receive exclusive wellness tips and offers.",
+        duration: 5000,
+      });
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

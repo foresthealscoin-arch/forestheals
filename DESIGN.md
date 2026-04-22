@@ -75,6 +75,23 @@ Elevated wellness platform blending forest heritage with luxury restraint. Fores
 - No animations without motion library orchestration — avoid ad-hoc framer-motion.
 - No arbitrary colors — all via semantic tokens.
 
+## About Page Design
+
+**Content Structure:**
+- Hero: Gradient forest green to cream, centered tagline "From forest to homes", with soft abstract background orbs
+- Brand Story: `bg-muted/30`, centered narrative text, motion entrance
+- Vision Section: Deep forest gradient card with cream text, cause-focused pillars (no money goals), abstract forest emoji accent
+- Mission Flowchart: 6-step horizontal timeline (Forest Sourcing → Formulation → Manufacturing → Distribution → Community → ₹10,000 Cr Impact), step cards with hover elevation, final step highlighted in primary color
+- Team: Three cards (glassmorphic) with avatars (initials in circular badges), bio text, professional roles
+  - **CEO & Founder:** Prateek Raj Kumawat
+  - **Co-Founder (Marketing & CRM):** Anya
+  - **CFO:** Arjun AI Agent
+- Eco Practices: `bg-background`, numbered list with Leaf icon accents
+- Charity & Impact: `bg-muted/30`, Heart icon, CTA linking to B2B partnership
+- Contact: `bg-background`, three cards (Mail, Phone, MapPin) with Beawar HQ address (NOT Jaipur)
+
+**Mobile Responsive:** All sections stack single-column on mobile with maintained spacing and visual hierarchy.
+
 ## Constraints
 
 - Mobile-first responsive (sm: 640px, md: 768px, lg: 1024px).

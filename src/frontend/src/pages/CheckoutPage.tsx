@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useQuery } from "@tanstack/react-query";
 import { Link, redirect } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -18,10 +20,11 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { createActor } from "../backend";
 import { useCart } from "../hooks/useCart";
 import { useCreateOrder } from "../hooks/useOrders";
+import { useProducts } from "../hooks/useProducts";
 import { formatDate, formatPrice } from "../lib/formatters";
-import { PRODUCTS_SEED_DATA } from "../lib/seedData";
 import { useAuthStore } from "../stores/useAuthStore";
 import type { Address, CreateOrderInput, Order, PaymentMethod } from "../types";
 
@@ -93,10 +96,13 @@ function ConfettiPiece({ index }: { index: number }) {
   );
 }
 
-// ─── Success Screen ───────────────────────────────────────────────────────────
 function SuccessScreen({
   order,
-}: { order: Order; cartItems: typeof PRODUCTS_SEED_DATA }) {
+  productMap,
+}: {
+  order: Order;
+  productMap: Record<number, { name: string; imageUrl: string }>;
+}) {
   const estimatedDelivery = new Date();
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
 
@@ -105,14 +111,12 @@ function SuccessScreen({
       className="min-h-[85vh] flex flex-col items-center justify-center gap-6 px-4 sm:px-6 py-10 relative overflow-hidden"
       data-ocid="checkout.success_state"
     >
-      {/* Confetti */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-10">
         {CONFETTI_PIECES.map((c) => (
           <ConfettiPiece key={c.id} index={c.index} />
         ))}
       </div>
 
-      {/* Check icon */}
       <motion.div
         initial={{ scale: 0, rotate: -15 }}
         animate={{ scale: 1, rotate: 0 }}
@@ -122,7 +126,6 @@ function SuccessScreen({
         <CheckCircle2 className="w-12 h-12 sm:w-14 sm:h-14 text-primary" />
       </motion.div>
 
-      {/* Headline */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -144,7 +147,6 @@ function SuccessScreen({
         </div>
       </motion.div>
 
-      {/* Order summary card */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -152,21 +154,22 @@ function SuccessScreen({
         className="glass-card rounded-2xl p-5 shadow-soft w-full max-w-md text-sm"
         data-ocid="checkout.success.order_summary"
       >
-        {/* Items */}
         <div className="space-y-2.5 mb-4">
           {order.items.slice(0, 3).map((item) => {
-            const product = PRODUCTS_SEED_DATA.find(
-              (p) => p.id === item.productId,
-            );
+            const product = productMap[item.productId];
             return (
               <div key={item.productId} className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
-                  {product && (
+                  {product?.imageUrl ? (
                     <img
                       src={product.imageUrl}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
+                  ) : (
+                    <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                      <Package className="w-4 h-4 text-primary" />
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -193,7 +196,6 @@ function SuccessScreen({
 
         <Separator className="my-3" />
 
-        {/* Total + Delivery */}
         <div className="space-y-2">
           <div className="flex justify-between items-center font-semibold text-base">
             <span className="text-foreground">Total Paid</span>
@@ -224,13 +226,10 @@ function SuccessScreen({
           )}
           <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
             <FileText className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-            <span>
-              GST invoice will be available in your dashboard for download.
-            </span>
+            <span>GST invoice will be available in your dashboard.</span>
           </div>
         </div>
 
-        {/* Address summary */}
         <Separator className="my-3" />
         <div className="text-xs text-muted-foreground space-y-0.5">
           <p className="flex items-center gap-1.5 font-medium text-foreground">
@@ -248,7 +247,6 @@ function SuccessScreen({
         </div>
       </motion.div>
 
-      {/* CTAs */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -277,11 +275,37 @@ function SuccessScreen({
   );
 }
 
+// ─── Branded image placeholder ────────────────────────────────────────────────
+function ProductPlaceholder() {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/10 gap-1">
+      <Package className="w-5 h-5 text-primary/40" />
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
-  const { isLoggedIn, principal } = useAuthStore();
+  const { isLoggedIn } = useAuthStore();
   const { items, discount, couponCode, clearAllCart } = useCart();
   const createOrder = useCreateOrder();
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const { actor, isFetching: actorFetching } = useActor(createActor);
+
+  // Fetch products for display names/images
+  const { data: products = [] } = useProducts();
+  const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
+
+  // Load user profile to pre-fill address
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      if (!actor || actorFetching) return null;
+      return actor.getUserProfile();
+    },
+    enabled: !!actor && !actorFetching && isLoggedIn,
+    staleTime: 60 * 1000,
+  });
 
   const [step, setStep] = useState<CheckoutStep>("address");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
@@ -296,6 +320,28 @@ export default function CheckoutPage() {
     pincode: "",
     country: "India",
   });
+
+  // Pre-fill address from user profile once loaded
+  useEffect(() => {
+    if (userProfile) {
+      const savedAddr = userProfile.addresses?.[0];
+      setAddress((prev) => ({
+        fullName: prev.fullName || userProfile.name || "",
+        phone: prev.phone || userProfile.phone || "",
+        line1: prev.line1 || (savedAddr ? savedAddr.street : ""),
+        line2: prev.line2 || "",
+        city:
+          prev.city || (savedAddr ? savedAddr.city : userProfile.city) || "",
+        state:
+          prev.state || (savedAddr ? savedAddr.state : userProfile.state) || "",
+        pincode:
+          prev.pincode ||
+          (savedAddr ? savedAddr.pincode : userProfile.pincode) ||
+          "",
+        country: prev.country || "India",
+      }));
+    }
+  }, [userProfile]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -323,10 +369,51 @@ export default function CheckoutPage() {
     address.state.trim() &&
     /^\d{6}$/.test(address.pincode);
 
+  // Save address to backend profile after order success
+  const saveAddressToProfile = async (addr: Address) => {
+    if (!actor || !userProfile) return;
+    try {
+      const existingAddresses = userProfile.addresses ?? [];
+      // Check if this address already exists (by street + pincode)
+      const alreadyExists = existingAddresses.some(
+        (a) => a.street === addr.line1 && a.pincode === addr.pincode,
+      );
+      if (alreadyExists) return;
+
+      const newAddr = {
+        id: `addr-${Date.now()}`,
+        tag: "Home",
+        street: addr.line1 + (addr.line2 ? `, ${addr.line2}` : ""),
+        city: addr.city,
+        state: addr.state,
+        pincode: addr.pincode,
+        country: addr.country ?? "India",
+        fullName: addr.fullName,
+        phone: addr.phone,
+        isDefault: existingAddresses.length === 0,
+      };
+
+      await actor.updateUserProfile({
+        name: userProfile.name,
+        email: userProfile.email,
+        phone: userProfile.phone,
+        city: userProfile.city,
+        state: userProfile.state,
+        pincode: userProfile.pincode,
+        country: userProfile.country,
+        addresses: [...existingAddresses, newAddr],
+      });
+    } catch {
+      // Address save failure is non-critical; order already placed
+    }
+  };
+
   const handlePlaceOrder = async () => {
+    setOrderError(null);
     const addressWithGst: Address = gstNumber
       ? { ...address, gstNumber }
       : address;
+
     const input: CreateOrderInput = {
       items,
       totalAmount: grandTotal,
@@ -335,12 +422,19 @@ export default function CheckoutPage() {
       couponCode: couponCode || undefined,
       discountAmount: discount,
     };
+
     try {
       const order = await createOrder.mutateAsync(input);
+      // Save address to backend profile (non-blocking)
+      void saveAddressToProfile(addressWithGst);
       clearAllCart();
       setPlacedOrder(order);
-    } catch {
-      // error toast handled in mutation onError
+    } catch (err) {
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : "Failed to place order. Please try again.";
+      setOrderError(errMsg);
     }
   };
 
@@ -351,12 +445,10 @@ export default function CheckoutPage() {
   ];
   const stepIndex = steps.findIndex((s) => s.id === step);
 
-  // Order placed success screen
   if (placedOrder !== null) {
-    return <SuccessScreen order={placedOrder} cartItems={PRODUCTS_SEED_DATA} />;
+    return <SuccessScreen order={placedOrder} productMap={productMap} />;
   }
 
-  // Empty cart guard
   if (items.length === 0) {
     return (
       <div
@@ -469,6 +561,44 @@ export default function CheckoutPage() {
                     <MapPin className="w-4 h-4 text-primary" /> Delivery Address
                   </h2>
 
+                  {/* Saved address selector */}
+                  {userProfile?.addresses &&
+                    userProfile.addresses.length > 0 && (
+                      <div className="space-y-2 p-3 bg-muted/40 rounded-xl">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Your saved addresses
+                        </p>
+                        {userProfile.addresses.map((saved, idx) => (
+                          <button
+                            key={saved.id || idx}
+                            type="button"
+                            onClick={() =>
+                              setAddress({
+                                fullName: saved.fullName,
+                                phone: saved.phone,
+                                line1: saved.street,
+                                line2: "",
+                                city: saved.city,
+                                state: saved.state,
+                                pincode: saved.pincode,
+                                country: saved.country ?? "India",
+                              })
+                            }
+                            className="w-full text-left text-xs p-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-smooth"
+                            data-ocid={`checkout.saved_address.${idx + 1}`}
+                          >
+                            <p className="font-medium text-foreground">
+                              {saved.fullName} — {saved.tag}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {saved.street}, {saved.city}, {saved.state} —{" "}
+                              {saved.pincode}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-1.5">
                       <Label htmlFor="fullName">Full Name *</Label>
@@ -489,17 +619,6 @@ export default function CheckoutPage() {
                         onChange={updateAddress("phone")}
                         placeholder="+91 98765 43210"
                         data-ocid="checkout.phone.input"
-                      />
-                    </div>
-                    <div className="sm:col-span-2 space-y-1.5">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={principal ?? ""}
-                        readOnly
-                        className="bg-muted/50 text-muted-foreground cursor-not-allowed"
-                        data-ocid="checkout.email.input"
                       />
                     </div>
                     <div className="sm:col-span-2 space-y-1.5">
@@ -626,7 +745,6 @@ export default function CheckoutPage() {
                   </h2>
 
                   <div className="space-y-3">
-                    {/* COD option */}
                     <label
                       className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-smooth ${
                         paymentMethod === "cod"
@@ -660,15 +778,11 @@ export default function CheckoutPage() {
                             <p className="text-sm font-medium text-primary">
                               Pay {formatPrice(grandTotal)} when order arrives
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Keep exact change ready for smooth delivery
-                            </p>
                           </motion.div>
                         )}
                       </div>
                     </label>
 
-                    {/* Online option */}
                     <label
                       className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-smooth ${
                         paymentMethod === "stripe"
@@ -705,13 +819,6 @@ export default function CheckoutPage() {
                                 Secured by Stripe — 256-bit encryption
                               </p>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              You'll be redirected to Stripe's secure payment
-                              page to complete payment of{" "}
-                              <strong className="text-foreground">
-                                {formatPrice(grandTotal)}
-                              </strong>
-                            </p>
                           </motion.div>
                         )}
                       </div>
@@ -753,7 +860,6 @@ export default function CheckoutPage() {
                   className="space-y-4"
                   data-ocid="checkout.review.panel"
                 >
-                  {/* Review — Cart items */}
                   <div className="glass-card rounded-2xl p-5 shadow-soft">
                     <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
                       <Package className="w-4 h-4 text-primary" /> Order Items (
@@ -761,9 +867,7 @@ export default function CheckoutPage() {
                     </h3>
                     <div className="space-y-3 max-h-48 overflow-y-auto scrollbar-hide">
                       {items.map((item, i) => {
-                        const product = PRODUCTS_SEED_DATA.find(
-                          (p) => p.id === item.productId,
-                        );
+                        const product = productMap[item.productId];
                         return (
                           <div
                             key={item.productId}
@@ -771,12 +875,14 @@ export default function CheckoutPage() {
                             data-ocid={`checkout.review.item.${i + 1}`}
                           >
                             <div className="w-11 h-11 rounded-lg overflow-hidden bg-muted shrink-0">
-                              {product && (
+                              {product?.imageUrl ? (
                                 <img
                                   src={product.imageUrl}
                                   alt={product.name}
                                   className="w-full h-full object-cover"
                                 />
+                              ) : (
+                                <ProductPlaceholder />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -796,7 +902,6 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* Review — Address */}
                   <div className="glass-card rounded-2xl p-5 shadow-soft">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
@@ -824,16 +929,9 @@ export default function CheckoutPage() {
                       <p>
                         {address.city}, {address.state} — {address.pincode}
                       </p>
-                      <p>{address.country}</p>
-                      {gstNumber && (
-                        <p className="font-mono text-xs mt-1">
-                          GST: {gstNumber}
-                        </p>
-                      )}
                     </div>
                   </div>
 
-                  {/* Review — Payment */}
                   <div className="glass-card rounded-2xl p-5 shadow-soft">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
@@ -878,13 +976,28 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* GST Invoice note */}
+                  {/* Error message */}
+                  {orderError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-start gap-3 p-4 rounded-xl bg-destructive/8 border border-destructive/25"
+                      data-ocid="checkout.error_state"
+                    >
+                      <div className="w-4 h-4 rounded-full bg-destructive/20 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-destructive text-xs font-bold">
+                          !
+                        </span>
+                      </div>
+                      <p className="text-sm text-destructive">{orderError}</p>
+                    </motion.div>
+                  )}
+
                   <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border border-border/60">
                     <FileText className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                     <p className="text-xs text-muted-foreground">
                       A GST-compliant invoice will be automatically generated
-                      for your order. You can download it from your dashboard
-                      after order confirmation.
+                      and available from your dashboard.
                     </p>
                   </div>
 
@@ -932,24 +1045,23 @@ export default function CheckoutPage() {
                 Order Summary
               </h2>
 
-              {/* Product list */}
               <div className="space-y-3 mb-4 max-h-40 overflow-y-auto scrollbar-hide">
                 {items.map((item) => {
-                  const p = PRODUCTS_SEED_DATA.find(
-                    (pr) => pr.id === item.productId,
-                  );
+                  const p = productMap[item.productId];
                   return (
                     <div
                       key={item.productId}
                       className="flex items-center gap-2.5"
                     >
                       <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
-                        {p && (
+                        {p?.imageUrl ? (
                           <img
                             src={p.imageUrl}
                             alt={p.name}
                             className="w-full h-full object-cover"
                           />
+                        ) : (
+                          <ProductPlaceholder />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1022,7 +1134,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Trust */}
               <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-center gap-1 text-xs text-muted-foreground">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                 <span>SSL secured · 100% safe checkout</span>

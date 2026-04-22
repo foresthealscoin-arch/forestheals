@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   CheckCircle,
   Download,
@@ -14,6 +15,7 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 
 const CATEGORIES = [
   "Ayurvedic Powders",
@@ -70,6 +72,7 @@ export default function B2BPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { actor } = useActor(createActor);
 
   const toggleCategory = (cat: string) => {
     setForm((prev) => ({
@@ -87,10 +90,25 @@ export default function B2BPage() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSubmitted(true);
-    toast.success("Inquiry submitted! We'll contact you within 24 hours.");
+    try {
+      if (actor) {
+        await actor.submitB2BInquiry({
+          companyName: form.companyName,
+          contactName: form.contactName,
+          email: form.email,
+          phone: form.phone,
+          productInterest: form.productInterest.join(", "),
+          quantity: form.quantity,
+          message: form.message,
+        });
+      }
+      setSubmitted(true);
+      toast.success("Inquiry submitted! We'll contact you within 24 hours.");
+    } catch {
+      toast.error("Failed to submit inquiry. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

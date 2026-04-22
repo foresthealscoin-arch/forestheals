@@ -7,8 +7,8 @@ import AccessControl "mo:caffeineai-authorization/access-control";
 import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
 import OutCall "mo:caffeineai-http-outcalls/outcall";
 import Stripe "mo:caffeineai-stripe/stripe";
-import ProductLib "lib/products";
-import Migration "migration";
+
+
 
 import ProductTypes "types/products";
 import OrderTypes "types/orders";
@@ -18,6 +18,7 @@ import B2BTypes "types/b2b";
 import FlashSaleTypes "types/flashsales";
 import AdminTypes "types/admin";
 import UserTypes "types/users";
+import Migration "migration";
 
 import ProductsApi "mixins/products-api";
 import CartApi "mixins/cart-api";
@@ -33,6 +34,8 @@ import AdminApi "mixins/admin-api";
 import AdminExtendedApi "mixins/admin-extended-api";
 import UsersApi "mixins/users-api";
 import ActivityApi "mixins/activity-api";
+
+
 
 
 (with migration = Migration.run)
@@ -75,11 +78,8 @@ actor {
   let adminCouponStore = List.empty<AdminTypes.AdminCoupon>();
   let inventoryStore = Map.empty<Text, AdminTypes.InventoryItem>();
 
-  // --- Auto-seed products on first initialization ---
-  ProductLib.seedProducts(productStore);
-  if (productStore.size() > 0 and nextProductId.value == 1) {
-    nextProductId.value := productStore.size() + 1;
-  };
+  // Admin credentials state — empty passwordHash means default (domex@1000) is active
+  let adminCredState : { var passwordHash : Text } = { var passwordHash = "" };
 
   // --- Domain API Mixins ---
   include ProductsApi(accessControlState, productStore, nextProductId);
@@ -93,7 +93,7 @@ actor {
   include RecommendationsApi(productStore);
   include FlashSalesApi(accessControlState, flashSaleStore, nextFlashSaleId);
   include AdminApi(accessControlState, productStore, orderStore);
-  include AdminExtendedApi(teamMemberStore, taskStore, expenseStore, blogPostStore, notificationStore, storeSettingsState, adminCouponStore, inventoryStore, orderStore, userStore, activityStore);
+  include AdminExtendedApi(accessControlState, teamMemberStore, taskStore, expenseStore, blogPostStore, notificationStore, storeSettingsState, adminCouponStore, inventoryStore, orderStore, userStore, activityStore, productStore, adminCredState);
   include UsersApi(accessControlState, userStore, orderStore);
   include ActivityApi(accessControlState, userStore, activityStore, nextActivityId, orderStore);
 

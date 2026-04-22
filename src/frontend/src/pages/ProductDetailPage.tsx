@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -22,48 +24,14 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 import { ProductCard } from "../components/ui/ProductCard";
 import { StarRating } from "../components/ui/StarRating";
 import { useCart } from "../hooks/useCart";
-import { useProduct } from "../hooks/useProducts";
+import { useProduct, useProducts } from "../hooks/useProducts";
 import { formatDate, formatPrice, getDiscountedPrice } from "../lib/formatters";
-import { PRODUCTS_SEED_DATA } from "../lib/seedData";
 import { useAuthStore } from "../stores/useAuthStore";
 import type { Review } from "../types";
-
-// ─── Static mock reviews per product ──────────────────────────────────────────
-const MOCK_REVIEWS: Review[] = [
-  {
-    id: 1,
-    productId: 1,
-    userId: "2vxsx-fae",
-    rating: 5,
-    text: "Absolutely love this product! Have been using it for 3 months and noticed significant improvement in my energy and stress levels. Packaging is eco-friendly and the quality is exceptional.",
-    verified: true,
-    createdAt: Date.now() - 7 * 24 * 3600 * 1000,
-    approved: true,
-  },
-  {
-    id: 2,
-    productId: 1,
-    userId: "be2us-64aaa",
-    rating: 4,
-    text: "Very good quality powder. Mixes well in warm milk. I appreciate that it's 100% pure with no additives. Will definitely reorder.",
-    verified: true,
-    createdAt: Date.now() - 14 * 24 * 3600 * 1000,
-    approved: true,
-  },
-  {
-    id: 3,
-    productId: 1,
-    userId: "djv73-kaaaa",
-    rating: 5,
-    text: "I've tried many brands but Forestheals is by far the best. You can smell the freshness. Great results for sleep and mood.",
-    verified: false,
-    createdAt: Date.now() - 21 * 24 * 3600 * 1000,
-    approved: true,
-  },
-];
 
 // ─── Usage instructions by category ──────────────────────────────────────────
 const USAGE_BY_CATEGORY: Record<string, string[]> = {
@@ -216,6 +184,32 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
+// ─── Product reviews hook ─────────────────────────────────────────────────────
+function useProductReviews(productId: number) {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery<Review[]>({
+    queryKey: ["reviews", productId],
+    queryFn: async () => {
+      if (!actor || isFetching) return [];
+      const raw = await actor.getProductReviews(BigInt(productId));
+      return raw
+        .filter((r) => r.approved)
+        .map((r) => ({
+          id: Number(r.id),
+          productId: Number(r.productId),
+          userId: r.userId.toText(),
+          rating: Number(r.rating),
+          text: r.text,
+          verified: r.verified,
+          createdAt: Number(r.createdAt) / 1_000_000,
+          approved: r.approved,
+        }));
+    },
+    enabled: productId > 0 && !!actor && !isFetching,
+    staleTime: 60 * 1000,
+  });
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ProductDetailPage() {
   const { id } = useParams({ from: "/products/$id" });
@@ -223,6 +217,8 @@ export default function ProductDetailPage() {
   const { data: product, isLoading } = useProduct(productId);
   const { addToCart } = useCart();
   const { isLoggedIn } = useAuthStore();
+  const { actor } = useActor(createActor);
+  const qc = useQueryClient();
 
   const [qty, setQty] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
@@ -231,6 +227,16 @@ export default function ProductDetailPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [wishlist, setWishlist] = useState(false);
+
+  // Real reviews from backend
+  const { data: reviews = [], isLoading: reviewsLoading } =
+    useProductReviews(productId);
+
+  // Related products from backend — same category
+  const { data: allProducts = [] } = useProducts(
+    product ? { category: product.category } : undefined,
+  );
+  const related = allProducts.filter((p) => p.id !== productId).slice(0, 4);
 
   if (isLoading) {
     return (
@@ -277,14 +283,10 @@ export default function ProductDetailPage() {
       ? getDiscountedPrice(product.price, product.discount)
       : product.price;
 
-  const related = PRODUCTS_SEED_DATA.filter(
-    (p) => p.category === product.category && p.id !== product.id,
-  ).slice(0, 4);
-
-  // Use seed reviews (keyed to product id for a bit of variety)
-  const reviews = MOCK_REVIEWS.map((r) => ({ ...r, productId: productId }));
   const avgRating =
-    reviews.reduce((sum, r) => sum + r.rating, 0) / (reviews.length || 1);
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : product.ratings;
   const distribution = calcDistribution(reviews);
 
   const benefits = extractBenefits(product.description, product.name);
@@ -313,10 +315,22 @@ export default function ProductDetailPage() {
       return;
     }
     setReviewSubmitting(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setReviewSubmitting(false);
-    setReviewSubmitted(true);
-    toast.success("Review submitted! It will appear after moderation.");
+    try {
+      if (actor) {
+        await actor.createReview({
+          productId: BigInt(productId),
+          rating: BigInt(reviewRating),
+          text: reviewText.trim(),
+        });
+        void qc.invalidateQueries({ queryKey: ["reviews", productId] });
+      }
+      setReviewSubmitted(true);
+      toast.success("Review submitted! It will appear after moderation.");
+    } catch {
+      toast.error("Failed to submit review. Please try again.");
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   return (
@@ -354,8 +368,8 @@ export default function ProductDetailPage() {
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src =
-                    "/assets/images/placeholder.svg";
+                  const img = e.currentTarget as HTMLImageElement;
+                  img.style.display = "none";
                 }}
               />
             </div>
@@ -393,12 +407,13 @@ export default function ProductDetailPage() {
 
             {/* Rating */}
             <div className="flex items-center gap-3 mb-5">
-              <StarRating rating={product.ratings} size="md" />
+              <StarRating rating={avgRating} size="md" />
               <span className="font-semibold text-sm text-foreground">
-                {product.ratings.toFixed(1)}
+                {avgRating.toFixed(1)}
               </span>
               <span className="text-sm text-muted-foreground">
-                ({product.reviewCount} reviews)
+                ({reviews.length > 0 ? reviews.length : product.reviewCount}{" "}
+                reviews)
               </span>
             </div>
 
@@ -719,7 +734,7 @@ export default function ProductDetailPage() {
                   className="justify-center my-2"
                 />
                 <p className="text-sm text-muted-foreground">
-                  {reviews.length} reviews
+                  {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
                 </p>
               </div>
               {/* Distribution bars */}
@@ -752,9 +767,26 @@ export default function ProductDetailPage() {
 
             {/* Review list */}
             <div className="space-y-4" data-ocid="product_detail.reviews.list">
-              {reviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))}
+              {reviewsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : reviews.length === 0 ? (
+                <div
+                  className="glass-card rounded-2xl p-8 text-center text-muted-foreground"
+                  data-ocid="product_detail.reviews.empty_state"
+                >
+                  <p className="text-sm">
+                    No reviews yet. Be the first to review this product!
+                  </p>
+                </div>
+              ) : (
+                reviews.map((review) => (
+                  <ReviewCard key={review.id} review={review} />
+                ))
+              )}
             </div>
           </div>
 

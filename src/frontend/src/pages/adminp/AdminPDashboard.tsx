@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   BarChart3,
   CheckCircle2,
@@ -12,50 +13,41 @@ import {
   Warehouse,
   XCircle,
 } from "lucide-react";
-import { useAllOrders } from "../../hooks/useOrders";
+import {
+  useAdminDashboard,
+  useAdminInventory,
+  useAdminOrders,
+  useAdminRecentActivity,
+  useAdminTasks,
+} from "../../hooks/useAdminData";
 import { formatPrice } from "../../lib/formatters";
 import { APKpiCard, AdminPLayout } from "./AdminPLayout";
-import { useAdminPStore } from "./adminpStore";
+
+const STATUS_COLOR: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800",
+  confirmed: "bg-blue-100 text-blue-800",
+  shipped: "bg-cyan-100 text-cyan-800",
+  delivered: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
 
 export default function AdminPDashboard() {
-  const products = useAdminPStore((s) => s.products);
-  const customers = useAdminPStore((s) => s.customers);
-  const expenses = useAdminPStore((s) => s.expenses);
-  const tasks = useAdminPStore((s) => s.tasks);
+  const { data: kpis, isLoading: kpisLoading, refetch } = useAdminDashboard();
+  const { data: orders = [], isLoading: ordersLoading } = useAdminOrders();
+  const { data: tasks = [] } = useAdminTasks();
+  const { data: inventory = [] } = useAdminInventory();
 
-  const { data: orders = [], isLoading, refetch } = useAllOrders();
-
-  // KPI calculations from real order data
-  const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const netProfit = totalRevenue - totalExpenses;
-  const pending = orders.filter((o) => o.status === "pending").length;
-  const completed = orders.filter((o) => o.status === "delivered").length;
-  const cancelled = orders.filter((o) => o.status === "cancelled").length;
-  const adSpend = expenses
-    .filter((e) => e.category === "Ad Spend")
-    .reduce((s, e) => s + e.amount, 0);
-  const lowStock = products.filter((p) => p.stock < 30).length;
-  const pendingTasks = tasks.filter((t) => !t.completed).length;
-  const avgOrder =
-    orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
   const recentOrders = [...orders].slice(0, 6);
-
-  const statusColor: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800",
-    confirmed: "bg-blue-100 text-blue-800",
-    shipped: "bg-cyan-100 text-cyan-800",
-    delivered: "bg-green-100 text-green-800",
-    cancelled: "bg-red-100 text-red-800",
-  };
-
-  const statusLabel: Record<string, string> = {
-    pending: "Pending",
-    confirmed: "Confirmed",
-    shipped: "Shipped",
-    delivered: "Delivered",
-    cancelled: "Cancelled",
-  };
+  const pendingTasks = tasks.filter((t) => !t.completed);
+  const lowStockItems = inventory.filter((i) => i.lowStockFlag);
 
   return (
     <AdminPLayout
@@ -80,86 +72,94 @@ export default function AdminPDashboard() {
       </div>
 
       {/* KPI Grid */}
-      <div
-        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-6"
-        data-ocid="adminp.dashboard.kpi_row"
-      >
-        <APKpiCard
-          label="Total Revenue"
-          value={formatPrice(totalRevenue)}
-          icon={TrendingUp}
-          color="green"
-          data-ocid="adminp.kpi.revenue"
-        />
-        <APKpiCard
-          label="Total Orders"
-          value={isLoading ? "…" : orders.length}
-          sub={`${completed} delivered`}
-          icon={ShoppingCart}
-          color="blue"
-        />
-        <APKpiCard
-          label="Pending Orders"
-          value={isLoading ? "…" : pending}
-          icon={Clock}
-          color="yellow"
-        />
-        <APKpiCard
-          label="Net Profit"
-          value={formatPrice(netProfit)}
-          icon={DollarSign}
-          color={netProfit >= 0 ? "green" : "red"}
-        />
-        <APKpiCard
-          label="Total Products"
-          value={products.length}
-          sub={`${lowStock} low stock`}
-          icon={Package}
-          color="blue"
-        />
-        <APKpiCard
-          label="Total Customers"
-          value={customers.length}
-          icon={Users}
-          color="green"
-        />
-        <APKpiCard
-          label="Avg Order Value"
-          value={formatPrice(avgOrder)}
-          icon={BarChart3}
-          color="blue"
-        />
-        <APKpiCard
-          label="Marketing Spend"
-          value={formatPrice(adSpend)}
-          icon={Tag}
-          color="yellow"
-        />
-        <APKpiCard
-          label="Completed Orders"
-          value={isLoading ? "…" : completed}
-          icon={CheckCircle2}
-          color="green"
-        />
-        <APKpiCard
-          label="Cancelled Orders"
-          value={isLoading ? "…" : cancelled}
-          icon={XCircle}
-          color="red"
-        />
-        <APKpiCard
-          label="Total Expenses"
-          value={formatPrice(totalExpenses)}
-          icon={Warehouse}
-          color="red"
-        />
-        <APKpiCard
-          label="Pending Tasks"
-          value={pendingTasks}
-          icon={CheckCircle2}
-          color="yellow"
-        />
-      </div>
+      {kpisLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+          {["a", "b", "c", "d", "e", "f", "g", "h"].map((k) => (
+            <Skeleton key={k} className="h-24 w-full rounded-2xl" />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-6"
+          data-ocid="adminp.dashboard.kpi_row"
+        >
+          <APKpiCard
+            label="Total Revenue"
+            value={formatPrice(kpis?.totalRevenue ?? 0)}
+            icon={TrendingUp}
+            color="green"
+          />
+          <APKpiCard
+            label="Total Orders"
+            value={kpis?.totalOrders ?? 0}
+            icon={ShoppingCart}
+            color="blue"
+          />
+          <APKpiCard
+            label="Pending Orders"
+            value={kpis?.pendingOrderCount ?? 0}
+            icon={Clock}
+            color="yellow"
+          />
+          <APKpiCard
+            label="Today's Revenue"
+            value={formatPrice(kpis?.todayRevenue ?? 0)}
+            icon={DollarSign}
+            color="green"
+          />
+          <APKpiCard
+            label="Total Products"
+            value={kpis?.totalProducts ?? 0}
+            sub={`${kpis?.lowStockCount ?? 0} low stock`}
+            icon={Package}
+            color="blue"
+          />
+          <APKpiCard
+            label="Total Customers"
+            value={kpis?.totalCustomers ?? 0}
+            icon={Users}
+            color="green"
+          />
+          <APKpiCard
+            label="Month Revenue"
+            value={formatPrice(kpis?.monthRevenue ?? 0)}
+            sub={`${kpis?.monthOrders ?? 0} orders`}
+            icon={BarChart3}
+            color="blue"
+          />
+          <APKpiCard
+            label="Pending Reviews"
+            value={kpis?.pendingReviewCount ?? 0}
+            icon={Tag}
+            color="yellow"
+          />
+          <APKpiCard
+            label="Week Revenue"
+            value={formatPrice(kpis?.weekRevenue ?? 0)}
+            sub={`${kpis?.weekOrders ?? 0} orders`}
+            icon={TrendingUp}
+            color="green"
+          />
+          <APKpiCard
+            label="Today's Orders"
+            value={kpis?.todayOrders ?? 0}
+            icon={ShoppingCart}
+            color="blue"
+          />
+          <APKpiCard
+            label="Low Stock Items"
+            value={kpis?.lowStockCount ?? 0}
+            icon={Warehouse}
+            color="red"
+          />
+          <APKpiCard
+            label="Pending Tasks"
+            value={pendingTasks.length}
+            icon={CheckCircle2}
+            color="yellow"
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Recent Orders */}
@@ -191,40 +191,47 @@ export default function AdminPDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order, i) => (
-                  <tr
-                    key={order.id}
-                    data-ocid={`adminp.dashboard.order.item.${i + 1}`}
-                    className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
-                  >
-                    <td className="px-5 py-3 font-mono text-xs text-gray-500">
-                      #{order.id}
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-gray-700 font-medium text-xs">
-                      {order.address.fullName ||
-                        `${order.userId.slice(0, 12)}…`}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900 text-xs">
-                      {formatPrice(order.totalAmount)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[order.status] ?? "bg-gray-100 text-gray-700"}`}
+                {ordersLoading
+                  ? ["a", "b", "c", "d"].map((k) => (
+                      <tr key={k} className="border-t border-gray-50">
+                        <td colSpan={4} className="px-5 py-3">
+                          <Skeleton className="h-4 w-full rounded" />
+                        </td>
+                      </tr>
+                    ))
+                  : recentOrders.map((order, i) => (
+                      <tr
+                        key={order.id}
+                        data-ocid={`adminp.dashboard.order.item.${i + 1}`}
+                        className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors"
                       >
-                        {statusLabel[order.status] ?? order.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {recentOrders.length === 0 && (
+                        <td className="px-5 py-3 font-mono text-xs text-gray-500">
+                          #{order.id}
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell text-gray-700 font-medium text-xs">
+                          {order.address.fullName ||
+                            `${order.userId.slice(0, 12)}…`}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900 text-xs">
+                          {formatPrice(order.totalAmount)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-700"}`}
+                          >
+                            {STATUS_LABEL[order.status] ?? order.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                {!ordersLoading && recentOrders.length === 0 && (
                   <tr>
                     <td
                       colSpan={4}
                       className="px-5 py-10 text-center text-gray-400 text-sm"
                     >
-                      {isLoading
-                        ? "Loading orders…"
-                        : "No orders yet — orders placed by customers will appear here."}
+                      No orders yet — orders placed by customers will appear
+                      here.
                     </td>
                   </tr>
                 )}
@@ -240,29 +247,30 @@ export default function AdminPDashboard() {
             <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
               <Package className="w-4 h-4 text-orange-500" /> Low Stock Alerts
             </h3>
-            {products.filter((p) => p.stock < 30).length === 0 ? (
+            {lowStockItems.length === 0 ? (
               <p className="text-sm text-gray-500">
                 All stock levels are good!
               </p>
             ) : (
               <div className="space-y-2">
-                {products
-                  .filter((p) => p.stock < 30)
-                  .slice(0, 5)
-                  .map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between text-xs"
-                      data-ocid={`adminp.dashboard.lowstock.${p.id}`}
+                {lowStockItems.slice(0, 5).map((item) => (
+                  <div
+                    key={item.productId}
+                    className="flex items-center justify-between text-xs"
+                    data-ocid={`adminp.dashboard.lowstock.${item.productId}`}
+                  >
+                    <span className="text-gray-700 truncate max-w-[140px]">
+                      {item.productName}
+                    </span>
+                    <span
+                      className={`font-semibold ${item.outOfStockFlag ? "text-red-600" : "text-orange-600"}`}
                     >
-                      <span className="text-gray-700 truncate max-w-[140px]">
-                        {p.name}
-                      </span>
-                      <span className="font-semibold text-orange-600">
-                        {p.stock} left
-                      </span>
-                    </div>
-                  ))}
+                      {item.outOfStockFlag
+                        ? "Out"
+                        : `${item.availableStock} left`}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -272,71 +280,67 @@ export default function AdminPDashboard() {
             <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#004a38]" /> Pending Tasks
             </h3>
-            {tasks.filter((t) => !t.completed).length === 0 ? (
+            {pendingTasks.length === 0 ? (
               <p className="text-sm text-gray-500">All tasks done! 🎉</p>
             ) : (
               <div className="space-y-2">
-                {tasks
-                  .filter((t) => !t.completed)
-                  .slice(0, 4)
-                  .map((t, i) => (
-                    <div key={t.id} className="flex items-start gap-2 text-xs">
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
-                          t.priority === "High"
-                            ? "bg-red-100 text-red-700"
-                            : t.priority === "Medium"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {t.priority}
-                      </span>
-                      <span
-                        className="text-gray-700 line-clamp-1"
-                        data-ocid={`adminp.dashboard.task.${i + 1}`}
-                      >
-                        {t.title}
-                      </span>
-                    </div>
-                  ))}
+                {pendingTasks.slice(0, 4).map((t, i) => (
+                  <div key={t.id} className="flex items-start gap-2 text-xs">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                        t.priority === "High"
+                          ? "bg-red-100 text-red-700"
+                          : t.priority === "Medium"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {t.priority}
+                    </span>
+                    <span
+                      className="text-gray-700 line-clamp-1"
+                      data-ocid={`adminp.dashboard.task.${i + 1}`}
+                    >
+                      {t.title}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Expense Breakdown */}
+          {/* Order Summary */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-blue-500" /> Expense Breakdown
+              <XCircle className="w-4 h-4 text-blue-500" /> Order Summary
             </h3>
             <div className="space-y-2">
-              {["Ad Spend", "Packaging", "Shipping", "Salary", "Misc"].map(
-                (cat) => {
-                  const amt = expenses
-                    .filter((e) => e.category === cat)
-                    .reduce((s, e) => s + e.amount, 0);
-                  const pct =
-                    totalExpenses > 0
-                      ? Math.round((amt / totalExpenses) * 100)
-                      : 0;
-                  return (
-                    <div key={cat}>
-                      <div className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>{cat}</span>
-                        <span className="font-medium">
-                          {formatPrice(amt)} ({pct}%)
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#004a38] rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
+              {[
+                {
+                  label: "Delivered",
+                  status: "delivered",
+                  cls: "text-green-600",
                 },
-              )}
+                { label: "Shipped", status: "shipped", cls: "text-cyan-600" },
+                {
+                  label: "Cancelled",
+                  status: "cancelled",
+                  cls: "text-red-600",
+                },
+              ].map((row) => {
+                const count = orders.filter(
+                  (o) => o.status === row.status,
+                ).length;
+                return (
+                  <div
+                    key={row.label}
+                    className="flex justify-between text-xs text-gray-600"
+                  >
+                    <span>{row.label}</span>
+                    <span className={`font-semibold ${row.cls}`}>{count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

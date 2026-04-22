@@ -33,8 +33,11 @@ type Address__274428118 =
   {
     city : Text;
     country : Text;
+    fullName : Text;
+    id : Text;
     isDefault : Bool;
-    postalCode : Text;
+    phone : Text;
+    pincode : Text;
     state : Text;
     street : Text;
     tag : Text
@@ -111,7 +114,8 @@ type BlogPost__742465984 =
     title : Text;
     updatedAt : Int
   };
-type CartItem__858515331 = {price : Nat; productId : Nat; quantity : Nat};
+type CartItem__858515331 =
+  {price : Nat; productId : Nat; productType : ?Text; quantity : Nat};
 type Category__8224233 = Text;
 type Coupon__243002030 =
   {
@@ -172,56 +176,51 @@ type Node__46230540<K, V> =
   {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
 type Node__92254746<T> =
   {#internal : Internal__667636161<T>; #leaf : Leaf__520550824<T>};
-type OldAddress__1053488244 =
+type OldAddress_Order__952161173 =
   {
     city : Text;
     country : Text;
+    fullName : Text;
     gstNumber : ?Text;
+    line1 : Text;
+    line2 : ?Text;
+    phone : Text;
+    pincode : Text;
+    state : Text
+  };
+type OldAddress_User__485648758 =
+  {
+    city : Text;
+    country : Text;
+    isDefault : Bool;
     postalCode : Text;
     state : Text;
-    street : Text
+    street : Text;
+    tag : Text
   };
 type OldCartItem__287857270 = {price : Nat; productId : Nat; quantity : Nat};
 type OldOrderStatus__13175761 =
   {#cancelled; #delivered; #pending; #processing; #shipped};
 type OldOrder__235915581 =
   {
-    address : OldAddress__1053488244;
+    address : OldAddress_Order__952161173;
     couponCode : ?Text;
     createdAt : Int;
     discountAmount : Nat;
     id : Nat;
     items : [OldCartItem__287857270];
-    paymentMethod : OldPaymentMethod__832006779;
+    paymentMethod : {#cod; #stripe};
     status : OldOrderStatus__13175761;
-    stripePaymentId : ?Text;
-    totalAmount : Nat;
-    userId : Principal
-  };
-type OldPaymentMethod__832006779 = {#cod; #stripe};
-type OrderStatus__272730104 =
-  {#cancelled; #delivered; #pending; #processing; #shipped};
-type Order__141779993 =
-  {
-    address : Address__175912953;
-    couponCode : ?Text;
-    createdAt : Int;
-    discountAmount : Nat;
-    id : Nat;
-    items : [CartItem__858515331];
-    paymentMethod : PaymentMethod__972042942;
-    status : OrderStatus__272730104;
     stripePaymentId : ?Text;
     totalAmount : Nat;
     updatedAt : Int;
     userId : Principal
   };
-type PaymentMethod__972042942 = {#cod; #stripe};
-type Product__750902660 =
+type OldProduct__278484740 =
   {
     bestseller : Bool;
     bundleIds : [Nat];
-    category : Category__8224233;
+    category : Text;
     description : Text;
     discount : Nat;
     featured : Bool;
@@ -232,6 +231,74 @@ type Product__750902660 =
     price : Nat;
     ratings : Float;
     reviewCount : Nat;
+    stock : Nat
+  };
+type OldStoreSettings__577895707 =
+  {
+    contactEmail : Text;
+    contactPhone : Text;
+    currency : Text;
+    facebookUrl : Text;
+    faviconUrl : Text;
+    freeShippingThreshold : Nat;
+    gstNumber : Text;
+    gstRate : Nat;
+    instagramUrl : Text;
+    logoUrl : Text;
+    seoDescription : Text;
+    seoTitle : Text;
+    shippingDefault : Nat;
+    storeName : Text;
+    timezone : Text;
+    whatsappNumber : Text
+  };
+type OldUserProfile__416069324 =
+  {
+    addresses : [OldAddress_User__485648758];
+    createdAt : Int;
+    email : Text;
+    id : Principal;
+    name : Text;
+    phone : Text
+  };
+type OrderStatus__272730104 =
+  {#cancelled; #completed; #confirmed; #pending; #processing; #shipped};
+type Order__141779993 =
+  {
+    address : Address__175912953;
+    couponCode : ?Text;
+    createdAt : Int;
+    discountAmount : Nat;
+    id : Nat;
+    items : [CartItem__858515331];
+    notes : ?Text;
+    paymentMethod : PaymentMethod__972042942;
+    status : OrderStatus__272730104;
+    stripePaymentId : ?Text;
+    totalAmount : Nat;
+    updatedAt : Int;
+    userId : Principal
+  };
+type PaymentMethod__972042942 = {#cod; #stripe};
+type ProductStatus__655178360 = {#active; #draft; #inactive};
+type Product__750902660 =
+  {
+    bestseller : Bool;
+    bundleIds : [Nat];
+    category : Category__8224233;
+    comparePrice : ?Nat;
+    description : Text;
+    discount : Nat;
+    featured : Bool;
+    id : Nat;
+    imageKey : Text;
+    imageUrl : Text;
+    images : [Text];
+    name : Text;
+    price : Nat;
+    ratings : Float;
+    reviewCount : Nat;
+    status : ProductStatus__655178360;
     stock : Nat
   };
 type Review__513345496 =
@@ -254,9 +321,15 @@ type StoreSettings__51598272 =
     contactPhone : Text;
     currency : Text;
     facebookUrl : Text;
+    faviconUrl : Text;
     freeShippingThreshold : Nat;
     gstNumber : Text;
+    gstRate : Nat;
     instagramUrl : Text;
+    logoUrl : Text;
+    seoDescription : Text;
+    seoTitle : Text;
+    shippingDefault : Nat;
     storeName : Text;
     timezone : Text;
     whatsappNumber : Text
@@ -284,11 +357,16 @@ type UserActivity__862856431 =
 type UserProfile__277265826 =
   {
     addresses : [Address__274428118];
+    city : Text;
+    country : Text;
     createdAt : Int;
     email : Text;
     id : Principal;
     name : Text;
-    phone : Text
+    phone : Text;
+    phoneVerified : Bool;
+    pincode : Text;
+    state : Text
   };
 type UserRole__1054455867 = {#admin; #guest; #user};
 actor ({
@@ -308,18 +386,15 @@ actor ({
       var blocks : [var [var ?AdminCoupon__1031922060]];
       var elementIndex : Nat__490723111
     };
+  stable adminCredState : {var passwordHash : Text};
   stable blogPostStore :
     {
       var blockIndex : Nat__490723111;
       var blocks : [var [var ?BlogPost__742465984]];
       var elementIndex : Nat__490723111
     };
-  stable cartStore :
-    {
-      var root :
-        Node__46230540<Principal, List__415060402<CartItem__858515331>>;
-      var size : Nat__490723111
-    };
+  in cartStore :
+    Map__605269027<Principal, List__415060402<OldCartItem__287857270>>;
   stable couponStore :
     {
       var root : Node__46230540<Text, Coupon__243002030>;
@@ -363,19 +438,14 @@ actor ({
       var elementIndex : Nat__490723111
     };
   in orderStore : List__415060402<OldOrder__235915581>;
-  stable productStore :
-    {
-      var blockIndex : Nat__490723111;
-      var blocks : [var [var ?Product__750902660]];
-      var elementIndex : Nat__490723111
-    };
+  in productStore : List__415060402<OldProduct__278484740>;
   stable reviewStore :
     {
       var blockIndex : Nat__490723111;
       var blocks : [var [var ?Review__513345496]];
       var elementIndex : Nat__490723111
     };
-  stable var storeSettingsState : {var settings : ?StoreSettings__51598272};
+  in storeSettingsState : {var settings : ?OldStoreSettings__577895707};
   stable var stripeConfiguration : ?StripeConfiguration__96897619;
   stable taskStore :
     {
@@ -389,11 +459,7 @@ actor ({
       var blocks : [var [var ?TeamMember__818543421]];
       var elementIndex : Nat__490723111
     };
-  stable userStore :
-    {
-      var root : Node__46230540<Principal, UserProfile__277265826>;
-      var size : Nat__490723111
-    };
+  in userStore : Map__605269027<Principal, OldUserProfile__416069324>;
   stable wishlistStore :
     {
       var root : Node__46230540<Principal, Set__532252804<Nat>>;
@@ -416,6 +482,7 @@ actor ({
       var blocks : [var [var ?AdminCoupon__1031922060]];
       var elementIndex : Nat__490723111
     };
+  stable adminCredState : {var passwordHash : Text};
   stable blogPostStore :
     {
       var blockIndex : Nat__490723111;

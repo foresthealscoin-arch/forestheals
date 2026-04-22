@@ -4,16 +4,24 @@ module {
     name : Text;
     email : Text;
     phone : Text;
+    phoneVerified : Bool;
+    city : Text;
+    state : Text;
+    pincode : Text;
+    country : Text;
     createdAt : Int;
     addresses : [Address];
   };
 
   public type Address = {
+    id : Text; // unique address ID for reference
     tag : Text; // "home" | "work" | "other"
+    fullName : Text;
+    phone : Text;
     street : Text;
     city : Text;
     state : Text;
-    postalCode : Text;
+    pincode : Text;
     country : Text;
     isDefault : Bool;
   };
@@ -28,6 +36,10 @@ module {
     name : Text;
     email : Text;
     phone : Text;
+    city : Text;
+    state : Text;
+    pincode : Text;
+    country : Text;
     addresses : [Address];
   };
 
@@ -62,6 +74,11 @@ module {
     name : Text;
     email : Text;
     phone : Text;
+    city : Text;
+    state : Text;
+    pincode : Text;
+    country : Text;
+    addresses : [Address];
     createdAt : Int;
     totalOrders : Nat;
     totalSpend : Nat;

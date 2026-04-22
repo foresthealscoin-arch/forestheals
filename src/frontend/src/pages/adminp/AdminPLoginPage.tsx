@@ -1,15 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Leaf, Lock, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../backend";
+import { unwrapResult } from "../../utils/convert";
 import { useAdminPStore } from "./adminpStore";
 
 export default function AdminPLoginPage() {
   const login = useAdminPStore((s) => s.login);
   const navigate = useNavigate();
+  const { actor, isFetching } = useActor(createActor);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -18,17 +22,33 @@ export default function AdminPLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!username.trim() || !password.trim()) {
+      setError("Please enter both username and password.");
+      return;
+    }
     setError("");
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    if (username === "forestheals" && password === "domex@1000") {
-      login();
-      toast.success("Welcome back, Forestheals Admin!");
-      navigate({ to: "/admin-p/dashboard" });
-    } else {
-      setError("Invalid username or password. Please try again.");
+    try {
+      if (!actor || isFetching) {
+        setError("Backend is not ready. Please wait a moment and try again.");
+        return;
+      }
+      const result = await actor.verifyAdminCredentials(username, password);
+      const ok = unwrapResult(result);
+      if (ok) {
+        login();
+        localStorage.setItem("adminp_authed", "true");
+        toast.success("Welcome back, Forestheals Admin!");
+        void navigate({ to: "/admin-p/dashboard" });
+      } else {
+        setError("Invalid username or password. Please try again.");
+      }
+    } catch (err) {
+      console.error("Admin login error:", err);
+      setError("Login failed. Please check credentials and try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -69,7 +89,7 @@ export default function AdminPLoginPage() {
                   id="ap-username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="forestheals"
+                  placeholder="Admin username"
                   className="pl-9"
                   autoComplete="username"
                   data-ocid="adminp.login.username_input"
@@ -98,6 +118,7 @@ export default function AdminPLoginPage() {
                   onClick={() => setShowPwd(!showPwd)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   tabIndex={-1}
+                  aria-label={showPwd ? "Hide password" : "Show password"}
                 >
                   {showPwd ? (
                     <EyeOff className="w-4 h-4" />
@@ -120,10 +141,14 @@ export default function AdminPLoginPage() {
             <Button
               type="submit"
               className="w-full bg-[#004a38] hover:bg-[#003a2c] text-white mt-2"
-              disabled={loading}
+              disabled={loading || isFetching}
               data-ocid="adminp.login.submit_button"
             >
-              {loading ? "Signing in…" : "Sign In to Admin"}
+              {loading
+                ? "Signing in…"
+                : isFetching
+                  ? "Connecting…"
+                  : "Sign In to Admin"}
             </Button>
           </form>
 

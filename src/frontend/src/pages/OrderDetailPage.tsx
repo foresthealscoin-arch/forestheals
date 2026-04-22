@@ -1,7 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   ChevronRight,
@@ -11,31 +14,68 @@ import {
   MessageCircle,
   Package,
   Truck,
+  XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { createActor } from "../backend";
 import { PageSpinner } from "../components/ui/Spinner";
 import { useOrder } from "../hooks/useOrders";
-import {
-  formatDate,
-  formatDateTime,
-  formatPrice,
-  getOrderStatusColor,
-} from "../lib/formatters";
-import { PRODUCTS_SEED_DATA } from "../lib/seedData";
-import type { OrderStatus } from "../types";
+import { formatDate, formatDateTime, formatPrice } from "../lib/formatters";
+import type { Product } from "../types";
+
+function getDetailStatusColor(status: string): string {
+  const map: Record<string, string> = {
+    pending:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+    confirmed:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    processing:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+    shipped:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+    completed:
+      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    delivered:
+      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  };
+  return map[status.toLowerCase()] ?? "bg-muted text-muted-foreground";
+}
+
+const EDIBLE_CATEGORIES = [
+  "Ayurvedic Powders",
+  "Seeds & Spices",
+  "Spices",
+  "Herbs",
+  "Food",
+];
+
+function isEdibleProduct(product?: Product): boolean {
+  if (!product) return false;
+  return EDIBLE_CATEGORIES.some((cat) =>
+    product.category?.toLowerCase().includes(cat.toLowerCase()),
+  );
+}
 
 const TIMELINE_STEPS: {
-  key: OrderStatus | "confirmed";
+  key: string;
   label: string;
   icon: React.ElementType;
 }[] = [
   { key: "pending", label: "Order Placed", icon: Package },
-  { key: "confirmed", label: "Processing", icon: Clock },
+  { key: "confirmed", label: "Confirmed", icon: CheckCircle2 },
+  { key: "processing", label: "Processing", icon: Clock },
   { key: "shipped", label: "Shipped", icon: Truck },
-  { key: "delivered", label: "Delivered", icon: CheckCircle2 },
+  { key: "completed", label: "Delivered", icon: CheckCircle2 },
 ];
 
-const STATUS_ORDER: string[] = ["pending", "confirmed", "shipped", "delivered"];
+const STATUS_ORDER: string[] = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "completed",
+];
 
 function TimelineStep({
   label,
@@ -88,6 +128,42 @@ function TimelineStep({
 export default function OrderDetailPage() {
   const { id } = useParams({ from: "/dashboard/orders/$id" });
   const { data: order, isLoading } = useOrder(Number(id));
+  const { actor, isFetching } = useActor(createActor);
+
+  const { data: productMap = {} } = useQuery<Record<number, Product>>({
+    queryKey: ["products-map"],
+    queryFn: async () => {
+      if (!actor || isFetching) return {};
+      const raw = await actor.listProducts({});
+      const map: Record<number, Product> = {};
+      for (const p of raw) {
+        map[Number(p.id)] = {
+          id: Number(p.id),
+          name: p.name,
+          description: p.description,
+          price: Number(p.price),
+          category: p.category,
+          imageUrl: p.imageUrl,
+          imageKey: p.imageKey,
+          images: p.images ?? [],
+          stock: Number(p.stock),
+          ratings: p.ratings,
+          reviewCount: Number(p.reviewCount),
+          featured: p.featured,
+          bestseller: p.bestseller,
+          discount: Number(p.discount),
+          bundleIds: p.bundleIds.map(Number),
+          status: String(p.status ?? "active") as
+            | "active"
+            | "inactive"
+            | "draft",
+        };
+      }
+      return map;
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 5 * 60 * 1000,
+  });
 
   if (isLoading) return <PageSpinner />;
 
@@ -111,17 +187,25 @@ export default function OrderDetailPage() {
     );
   }
 
-  const currentStep = STATUS_ORDER.indexOf(order.status);
+  const normalizedStatus = order.status.toLowerCase();
+  const isCompleted =
+    normalizedStatus === "completed" || normalizedStatus === "delivered";
+  const isCancelled = normalizedStatus === "cancelled";
+  const currentStep = STATUS_ORDER.indexOf(normalizedStatus);
+
+  const hasEdibleItem = order.items.some((item) => {
+    const product = productMap[item.productId];
+    return isEdibleProduct(product);
+  });
+
   const whatsappMsg = encodeURIComponent(
     `Hello! I need help with my Forestheals order #${order.id}. Please assist.`,
   );
 
   return (
     <div className="min-h-screen bg-background" data-ocid="order_detail.page">
-      {/* Header bar */}
       <div className="bg-card border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-4">
-          {/* Breadcrumb */}
           <nav
             className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3"
             aria-label="Breadcrumb"
@@ -166,20 +250,60 @@ export default function OrderDetailPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge
-                className={`capitalize text-sm px-3 py-1 ${getOrderStatusColor(order.status)}`}
-              >
-                {order.status}
-              </Badge>
-            </div>
+            <Badge
+              className={`capitalize text-sm px-3 py-1 ${getDetailStatusColor(order.status)}`}
+            >
+              {order.status}
+            </Badge>
           </div>
         </div>
       </div>
 
       <div className="container max-w-4xl mx-auto px-4 py-8 space-y-5">
+        {/* Non-returnable edible item notice */}
+        {isCompleted && hasEdibleItem && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800"
+            data-ocid="order_detail.edible_notice"
+          >
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Not returnable due to edible item
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                This order contains edible products (Ayurvedic powders / spices)
+                which cannot be returned for hygiene and safety reasons.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Cancelled notice */}
+        {isCancelled && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800"
+            data-ocid="order_detail.cancelled_notice"
+          >
+            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                Order Cancelled
+              </p>
+              <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
+                This order has been cancelled. If you paid online, a refund will
+                be processed within 5–7 business days.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Timeline */}
-        {order.status !== "cancelled" && (
+        {!isCancelled && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -225,7 +349,6 @@ export default function OrderDetailPage() {
             Order Items
           </h2>
 
-          {/* Table header */}
           <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 text-xs text-muted-foreground font-medium pb-2 border-b border-border/50 mb-3">
             <span className="w-12" />
             <span>Product</span>
@@ -236,22 +359,22 @@ export default function OrderDetailPage() {
 
           <div className="space-y-0">
             {order.items.map((item, i) => {
-              const product = PRODUCTS_SEED_DATA.find(
-                (p) => p.id === item.productId,
-              );
+              const product = productMap[item.productId];
               return (
                 <div
                   key={item.productId}
                   className="flex items-center gap-4 py-3.5 border-b border-border/40 last:border-0"
                   data-ocid={`order_detail.item.${i + 1}.row`}
                 >
-                  {/* Image */}
                   <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-muted">
-                    {product ? (
+                    {product?.imageUrl ? (
                       <img
                         src={product.imageUrl}
                         alt={product.name}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -259,8 +382,6 @@ export default function OrderDetailPage() {
                       </div>
                     )}
                   </div>
-
-                  {/* Name */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground line-clamp-1">
                       {product?.name ?? `Product #${item.productId}`}
@@ -271,18 +392,12 @@ export default function OrderDetailPage() {
                       </p>
                     )}
                   </div>
-
-                  {/* Unit price */}
                   <span className="text-sm text-muted-foreground hidden sm:block w-20 text-right">
                     {formatPrice(item.price)}
                   </span>
-
-                  {/* Qty */}
                   <span className="text-sm text-muted-foreground w-8 text-center">
                     ×{item.quantity}
                   </span>
-
-                  {/* Line total */}
                   <span className="text-sm font-semibold text-primary w-20 text-right">
                     {formatPrice(item.price * item.quantity)}
                   </span>
@@ -291,7 +406,6 @@ export default function OrderDetailPage() {
             })}
           </div>
 
-          {/* Totals */}
           <div className="pt-4 mt-2 border-t border-border space-y-1.5">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
@@ -302,8 +416,7 @@ export default function OrderDetailPage() {
             {order.discountAmount > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Discount
-                  {order.couponCode && ` (${order.couponCode})`}
+                  Discount{order.couponCode && ` (${order.couponCode})`}
                 </span>
                 <span className="text-primary">
                   −{formatPrice(order.discountAmount)}
@@ -319,14 +432,13 @@ export default function OrderDetailPage() {
           </div>
         </motion.div>
 
-        {/* Address + Payment info */}
+        {/* Address + Payment */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           className="grid sm:grid-cols-2 gap-4"
         >
-          {/* Delivery Address */}
           <div
             className="glass-card rounded-2xl p-5 shadow-soft"
             data-ocid="order_detail.address.section"
@@ -351,7 +463,6 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Payment Info */}
           <div
             className="glass-card rounded-2xl p-5 shadow-soft"
             data-ocid="order_detail.payment.section"
@@ -372,13 +483,12 @@ export default function OrderDetailPage() {
                 <span className="text-muted-foreground">Status</span>
                 <Badge
                   className={
-                    order.paymentMethod === "cod" &&
-                    order.status !== "delivered"
+                    order.paymentMethod === "cod" && !isCompleted
                       ? "bg-secondary text-secondary-foreground"
                       : "bg-primary/10 text-primary"
                   }
                 >
-                  {order.paymentMethod === "cod" && order.status !== "delivered"
+                  {order.paymentMethod === "cod" && !isCompleted
                     ? "Pay on Delivery"
                     : "Paid"}
                 </Badge>
