@@ -1,14 +1,18 @@
+@import url('https://fonts.cdnfonts.com/css/trade-gothic-next');
+@import url('https://fonts.cdnfonts.com/css/garet');
 @import 'tailwindcss';
 
 :root {
-  --forest: #123d2a;
-  --forest-dark: #09251a;
-  --ink: #11181c;
-  --cream: #f7f4ee;
-  --paper: #fcfbf8;
-  --muted: #6b6f70;
-  --line: #ddd9d1;
-  --white: #ffffff;
+  --charcoal: #2c2930;
+  --cream: #ded2c2;
+  --slate: #525d63;
+  --blue-gray: #2a333a;
+  --near-black: #1f2028;
+  --ink: #1f2028;
+  --paper: #f3efe8;
+  --muted: #525d63;
+  --line: rgba(44, 41, 48, 0.16);
+  --shadow-soft: 0 18px 48px rgba(31, 32, 40, 0.08);
 }
 
 * {
@@ -22,16 +26,63 @@ html {
 body {
   margin: 0;
   background: var(--cream);
-  color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--near-black);
+  font-family: 'Garet', 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.logo,
+.display,
+.heading,
+button,
+.nav-item,
+.price-display {
+  font-family: 'Trade Gothic Extended', 'Trade Gothic Next', 'Arial Narrow', sans-serif;
+  letter-spacing: -0.05em;
+}
+
+button,
+a,
+input,
+textarea,
+select,
+label,
+span,
+p {
+  font-family: 'Garet', 'Segoe UI', sans-serif;
 }
 
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+  transition: all 180ms ease;
+}
+
+img {
+  display: block;
+  max-width: 100%;
 }
 
 ::selection {
-  background: var(--forest);
-  color: white;
+  background: rgba(44, 41, 48, 0.18);
+  color: var(--near-black);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
