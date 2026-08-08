@@ -6,8 +6,11 @@ export type Product = {
   description?: string;
   category: string;
   priceCents: number;
+  variantId?: string | null;
+  variantName?: string | null;
+  stock?: number | null;
+  image: string | null;
   compareAtCents?: number;
-  image: string;
   benefits: string[];
   tags: string[];
   active: boolean;

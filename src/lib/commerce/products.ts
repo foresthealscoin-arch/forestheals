@@ -18,7 +18,9 @@ export async function getProducts() {
       description: products.description,
       active: products.active,
       priceCents: variants.priceCents,
+      variantId: variants.id,
       variantName: variants.name,
+      stock: variants.stock,
       image: productImages.url,
     })
     .from(products)
