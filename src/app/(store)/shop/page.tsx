@@ -10,27 +10,28 @@ export default async function ShopPage() {
     slug: product.slug,
     subtitle: 'Functional wellness',
     category: 'Wellness',
-    priceCents: 99900,
-    image: '/images/products/collagen-coffee.jpg',
+    priceCents: product.priceCents ?? 0,
+    variantId: product.variantId ?? null,
+    variantName: product.variantName ?? null,
+    stock: product.stock ?? 0,
+    image: product.image ?? '/images/products/collagen-coffee.jpg',
     benefits: [],
     tags: [],
     active: product.active,
   }));
 
   return (
-    <main className="min-h-screen px-6 py-16 lg:px-12">
-      <div className="mx-auto max-w-7xl">
-        <p className="mb-3 text-sm uppercase tracking-[0.2em] text-[var(--forest)]">
-          Functional essentials
-        </p>
+    <main className="mx-auto max-w-7xl px-6 py-16">
+      <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+        Forestheals
+      </p>
 
-        <h1 className="text-4xl font-semibold lg:text-6xl">
-          Shop wellness.
-        </h1>
+      <h1 className="mt-3 text-4xl font-semibold lg:text-6xl">
+        Shop wellness.
+      </h1>
 
-        <div className="mt-10">
-          <ProductGrid products={items} />
-        </div>
+      <div className="mt-10">
+        <ProductGrid products={items} />
       </div>
     </main>
   );

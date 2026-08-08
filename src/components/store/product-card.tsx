@@ -9,8 +9,11 @@ import { useCartStore } from '@/lib/commerce/cart-store';
 export function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((state) => state.addItem);
 
-  const handleAdd = () => {
-    if (!product.variantId) return;
+  function addToCart() {
+    if (!product.variantId) {
+      alert('This product is not available yet.');
+      return;
+    }
 
     addItem({
       productId: product.id,
@@ -21,7 +24,7 @@ export function ProductCard({ product }: { product: Product }) {
       quantity: 1,
       image: product.image ?? null,
     });
-  };
+  }
 
   return (
     <article className="group">
@@ -53,15 +56,13 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
       </Link>
 
-      {product.variantId && (
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="mt-4 w-full rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
-        >
-          Add to Cart
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={addToCart}
+        className="mt-4 flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.98]"
+      >
+        Add to Cart
+      </button>
     </article>
   );
 }
