@@ -3,7 +3,7 @@ import { getProducts } from '@/lib/commerce/products';
 import { products as developmentProducts } from '@/data/products';
 
 export default async function ShopPage() {
-  const products = await getProducts();
+  const products = await getProducts().catch(() => []);
 
   const itemLookup = new Map(
     developmentProducts.map((product) => [product.slug, product]),
@@ -11,7 +11,8 @@ export default async function ShopPage() {
 
   const items = products.length
     ? products.map((product) => {
-        const fallback = itemLookup.get(product.slug) ?? itemLookup.get('collagen-coffee');
+        const fallback =
+          itemLookup.get(product.slug) ?? itemLookup.get('collagen-coffee');
 
         return {
           id: product.id,
@@ -24,8 +25,13 @@ export default async function ShopPage() {
           variantId: product.variantId ?? null,
           variantName: product.variantName ?? null,
           stock: product.stock ?? fallback?.stock ?? 0,
-          image: product.image ?? fallback?.image ?? '/images/products/collagen-coffee.jpg',
-          images: fallback?.images ?? [fallback?.image ?? '/images/products/collagen-coffee.jpg'],
+          image:
+            product.image ??
+            fallback?.image ??
+            '/images/products/collagen-coffee.jpg',
+          images: fallback?.images ?? [
+            fallback?.image ?? '/images/products/collagen-coffee.jpg',
+          ],
           compareAtCents: fallback?.compareAtCents,
           benefits: fallback?.benefits ?? [],
           tags: fallback?.tags ?? [],
@@ -42,7 +48,7 @@ export default async function ShopPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-16">
-      <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+      <p className="text-sm tracking-[0.2em] text-gray-500 uppercase">
         Forestheals
       </p>
 
