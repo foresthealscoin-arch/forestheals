@@ -17,6 +17,10 @@ const questionGroups = [
     title: 'What matters most to your daily wellness?',
     options: ['Nutrition', 'Recovery', 'Calm', 'Morning energy', 'General wellness'],
   },
+  {
+    title: 'Which routine support do you want first?',
+    options: ['Daily essentials', 'Skin glow', 'Better focus', 'Gut balance', 'Stress calm'],
+  },
 ];
 
 export function OnboardingFlow() {
@@ -77,7 +81,7 @@ export function OnboardingFlow() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={reduceMotion ? undefined : { opacity: 0, y: 16, scale: 0.98 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="relative w-full max-w-3xl overflow-hidden rounded-[32px] border border-[var(--line)] bg-[var(--paper)] shadow-[0_24px_120px_rgba(31,32,40,0.35)]"
+          className="relative w-full max-w-4xl overflow-hidden rounded-[32px] border border-[var(--line)] bg-[var(--paper)] shadow-[0_24px_120px_rgba(31,32,40,0.35)]"
         >
           <button
             type="button"
@@ -88,7 +92,7 @@ export function OnboardingFlow() {
             <X size={18} />
           </button>
 
-          <div className="grid min-h-[520px] md:grid-cols-[1.1fr_1.1fr]">
+          <div className="grid min-h-[540px] md:grid-cols-[1.08fr_1.12fr]">
             <div className="relative overflow-hidden bg-[var(--blue-gray)] p-8 text-[var(--cream)] md:p-10">
               <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.28em] text-[var(--cream)]/80">
                 <Sparkles size={12} />
@@ -101,7 +105,7 @@ export function OnboardingFlow() {
                 transition={{ delay: 0.1 }}
                 className="mt-14"
               >
-                <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--cream)]/80">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-[var(--cream)]/75">
                   Personalize your routine
                 </p>
                 <h2 className="mt-5 max-w-md text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
@@ -109,7 +113,18 @@ export function OnboardingFlow() {
                 </h2>
               </motion.div>
 
-              <div className="mt-10 h-1.5 w-full overflow-hidden rounded-full bg-[var(--cream)]/10">
+              <div className="mt-10 mb-8 grid gap-3 text-sm text-[var(--cream)]/80">
+                {['Evidence-led essentials', 'Daily rituals that fit your life', 'A calmer, smarter routine'].map((item) => (
+                  <div key={item} className="flex items-center gap-3 rounded-full border border-[var(--cream)]/15 bg-[var(--cream)]/5 px-3 py-2">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--paper)] text-[var(--charcoal)]">
+                      <Check size={14} />
+                    </span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--cream)]/10">
                 <motion.div
                   className="h-full rounded-full bg-[var(--cream)]"
                   initial={false}

@@ -47,12 +47,12 @@ export function Hero() {
             transition={{ duration: 0.55, delay: 0.24 }}
             className="mt-8 flex flex-wrap gap-3"
           >
-            <MagneticButton href="/shop" className="inline-flex items-center gap-2 rounded-full bg-[var(--blue-gray)] px-6 py-3.5 text-sm font-semibold text-[var(--cream)] shadow-[0_18px_40px_rgba(31,32,40,0.18)] hover:bg-[var(--charcoal)]">
+            <MagneticButton href="/shop" className="forest-button inline-flex items-center gap-2 rounded-full bg-[var(--blue-gray)] px-6 py-3.5 text-sm font-semibold text-[var(--cream)] shadow-[0_18px_40px_rgba(31,32,40,0.18)] hover:bg-[var(--charcoal)]">
               Shop now
               <ArrowRight size={16} />
             </MagneticButton>
 
-            <MagneticButton href="/collections" className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--paper)] px-6 py-3.5 text-sm font-semibold text-[var(--near-black)] hover:border-[var(--slate)]/40 hover:bg-[var(--cream)]">
+            <MagneticButton href="/collections" className="forest-button-secondary inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--paper)] px-6 py-3.5 text-sm font-semibold text-[var(--near-black)] hover:border-[var(--slate)]/40 hover:bg-[var(--cream)]">
               <Play size={14} className="fill-current" />
               Explore collections
             </MagneticButton>

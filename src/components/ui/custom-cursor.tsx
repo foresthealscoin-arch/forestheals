@@ -8,12 +8,8 @@ export function CustomCursor() {
   const [isMounted, setIsMounted] = useState(false);
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
-  const ringX = useMotionValue(-100);
-  const ringY = useMotionValue(-100);
-  const springX = useSpring(x, { stiffness: 250, damping: 18, mass: 0.3 });
-  const springY = useSpring(y, { stiffness: 250, damping: 18, mass: 0.3 });
-  const ringSpringX = useSpring(ringX, { stiffness: 200, damping: 22, mass: 0.4 });
-  const ringSpringY = useSpring(ringY, { stiffness: 200, damping: 22, mass: 0.4 });
+  const springX = useSpring(x, { stiffness: 280, damping: 20, mass: 0.25 });
+  const springY = useSpring(y, { stiffness: 280, damping: 20, mass: 0.25 });
 
   useEffect(() => {
     setIsMounted(true);
@@ -23,29 +19,43 @@ export function CustomCursor() {
     const handlePointerMove = (event: PointerEvent) => {
       x.set(event.clientX);
       y.set(event.clientY);
-      ringX.set(event.clientX);
-      ringY.set(event.clientY);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
 
     return () => window.removeEventListener('pointermove', handlePointerMove);
-  }, [reduceMotion, ringX, ringY, x, y]);
+  }, [reduceMotion, x, y]);
 
-  if (!isMounted || reduceMotion || typeof window !== 'undefined' && window.innerWidth < 768) {
+  if (!isMounted || reduceMotion || (typeof window !== 'undefined' && window.innerWidth < 768)) {
     return null;
   }
 
   return (
-    <>
+    <div className="pointer-events-none fixed inset-0 z-50 hidden md:block">
       <motion.div
-        className="pointer-events-none fixed left-0 top-0 z-50 hidden h-3 w-3 rounded-full bg-[var(--charcoal)] mix-blend-multiply md:block"
+        className="absolute left-0 top-0"
         style={{ x: springX, y: springY }}
-      />
-      <motion.div
-        className="pointer-events-none fixed left-0 top-0 z-50 hidden h-10 w-10 rounded-full border border-[var(--slate)]/30 bg-[var(--charcoal)]/5 md:block"
-        style={{ x: ringSpringX, y: ringSpringY }}
-      />
-    </>
+      >
+        <div className="relative flex h-12 w-12 items-center justify-center">
+          <motion.div
+            className="absolute h-10 w-10 rounded-full border border-[var(--charcoal)]/30"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 12, ease: 'linear', repeat: Infinity }}
+          >
+            <span className="absolute -left-1 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-[var(--charcoal)]" />
+          </motion.div>
+
+          <motion.div
+            className="absolute h-16 w-16 rounded-full border border-[var(--slate)]/20"
+            animate={{ rotate: -360 }}
+            transition={{ duration: 18, ease: 'linear', repeat: Infinity }}
+          >
+            <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-[var(--slate)]" />
+          </motion.div>
+
+          <span className="absolute h-3.5 w-3.5 rounded-full bg-[var(--cream)] shadow-[0_0_0_2px_rgba(44,41,48,0.1)] ring-2 ring-[var(--charcoal)]/80" />
+        </div>
+      </motion.div>
+    </div>
   );
 }

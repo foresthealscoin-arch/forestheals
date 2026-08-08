@@ -28,9 +28,9 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <article className="group flex h-full flex-col">
+    <article className="group flex h-full flex-col rounded-[28px] border border-[var(--line)] bg-[var(--paper)] p-3 shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(31,32,40,0.12)]">
       <Link href={`/shop/${product.slug}`} className="block">
-        <div className="relative overflow-hidden rounded-2xl bg-gray-100">
+        <div className="relative overflow-hidden rounded-[22px] bg-gray-100">
           {isBestSeller && (
             <span className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-700">
               Best seller
@@ -43,7 +43,7 @@ export function ProductCard({ product }: { product: Product }) {
               alt={product.name}
               width={945}
               height={1181}
-              className="aspect-[4/5] w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+              className="aspect-[4/5] w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
           ) : (
             <div className="aspect-[4/5] bg-gray-100" />
@@ -75,13 +75,22 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
       </Link>
 
-      <button
-        type="button"
-        onClick={addToCart}
-        className="mt-4 flex w-full items-center justify-center rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.98]"
-      >
-        Add to Cart
-      </button>
+      <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+        <button
+          type="button"
+          onClick={addToCart}
+          className="flex w-full items-center justify-center rounded-full bg-[var(--charcoal)] px-4 py-3 text-sm font-semibold text-[var(--cream)] transition hover:bg-[var(--blue-gray)] active:scale-[0.99]"
+        >
+          Add to cart
+        </button>
+
+        <Link
+          href={`/shop/${product.slug}`}
+          className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-[var(--paper)] px-4 py-3 text-sm font-semibold text-[var(--near-black)] transition hover:bg-[var(--cream)]"
+        >
+          View
+        </Link>
+      </div>
     </article>
   );
 }

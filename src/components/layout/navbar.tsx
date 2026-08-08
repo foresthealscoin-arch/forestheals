@@ -41,7 +41,7 @@ export function Navbar() {
           FORESTHEALS
         </Link>
 
-        <nav className="hidden items-center gap-7 text-[11px] uppercase tracking-[0.16em] md:flex">
+        <nav className="hidden items-center gap-7 text-[11px] font-extrabold uppercase tracking-[0.18em] md:flex">
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -49,30 +49,32 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`nav-item relative pb-1 transition ${
+                className={`nav-item relative pb-1 font-extrabold transition-all duration-200 ${
                   active ? 'text-current' : 'opacity-80 hover:opacity-100'
                 }`}
               >
                 {item.label}
-                {active && (
-                  <span className="absolute -bottom-2 left-0 h-px w-full bg-current" />
-                )}
+                <span
+                  className={`absolute -bottom-2 left-0 h-px w-full origin-left bg-current transition-transform duration-200 ${
+                    active ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                  }`}
+                />
               </Link>
             );
           })}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button type="button" className="hidden h-10 w-10 items-center justify-center rounded-[6px] border border-current/20 bg-transparent sm:inline-flex">
+          <button type="button" className="forest-button-secondary hidden h-10 w-10 items-center justify-center rounded-[8px] border border-current/20 bg-transparent sm:inline-flex">
             <Search size={16} />
           </button>
 
-          <Link href="/account" className="hidden items-center gap-2 rounded-[6px] border border-current/20 px-3 py-2 text-[10px] uppercase tracking-[0.16em] sm:inline-flex">
+          <Link href="/account" className="forest-button-secondary hidden items-center gap-2 rounded-[8px] border border-current/20 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] sm:inline-flex">
             <User size={14} />
             ACCOUNT
           </Link>
 
-          <Link href="/cart" aria-label={`Cart with ${count} items`} className="relative flex h-10 w-10 items-center justify-center rounded-[6px] border border-current/20 bg-[var(--blue-gray)] text-[var(--cream)]">
+          <Link href="/cart" aria-label={`Cart with ${count} items`} className="forest-button relative flex h-10 w-10 items-center justify-center rounded-[8px] border border-current/20 bg-[var(--blue-gray)] text-[var(--cream)]">
             <ShoppingBag size={16} />
             {count > 0 && (
               <motion.span
