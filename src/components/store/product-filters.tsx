@@ -16,10 +16,11 @@ export function ProductFilters({
       <button
         type="button"
         onClick={() => onChange('all')}
-        className={`rounded-full px-4 py-2 text-sm ${
+        aria-pressed={selected === 'all'}
+        className={`rounded-full px-4 py-2 text-sm font-medium transition ${
           selected === 'all'
-            ? 'bg-black text-white'
-            : 'bg-gray-100'
+            ? 'bg-black text-white shadow-sm'
+            : 'bg-white text-gray-700 ring-1 ring-black/10 hover:bg-gray-50'
         }`}
       >
         All
@@ -30,10 +31,11 @@ export function ProductFilters({
           key={category}
           type="button"
           onClick={() => onChange(category)}
-          className={`rounded-full px-4 py-2 text-sm ${
+          aria-pressed={selected === category}
+          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
             selected === category
-              ? 'bg-black text-white'
-              : 'bg-gray-100'
+              ? 'bg-black text-white shadow-sm'
+              : 'bg-white text-gray-700 ring-1 ring-black/10 hover:bg-gray-50'
           }`}
         >
           {category}

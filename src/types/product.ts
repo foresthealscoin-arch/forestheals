@@ -10,8 +10,15 @@ export type Product = {
   variantName?: string | null;
   stock?: number | null;
   image: string | null;
+  images?: string[];
   compareAtCents?: number;
   benefits: string[];
   tags: string[];
   active: boolean;
+  isBestSeller?: boolean;
+  rating?: number;
+  ingredients?: Array<{
+    name: string;
+    amount?: string | null;
+  }>;
 };

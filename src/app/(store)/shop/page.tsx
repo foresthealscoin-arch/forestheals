@@ -1,24 +1,44 @@
 import { ShopClient } from '@/components/store/shop-client';
 import { getProducts } from '@/lib/commerce/products';
+import { products as developmentProducts } from '@/data/products';
 
 export default async function ShopPage() {
   const products = await getProducts();
 
-  const items = products.map((product) => ({
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    subtitle: 'Functional wellness',
-    category: 'Wellness',
-    priceCents: product.priceCents ?? 0,
-    variantId: product.variantId ?? null,
-    variantName: product.variantName ?? null,
-    stock: product.stock ?? 0,
-    image: product.image ?? '/images/products/collagen-coffee.jpg',
-    benefits: [],
-    tags: [],
-    active: product.active,
-  }));
+  const itemLookup = new Map(
+    developmentProducts.map((product) => [product.slug, product]),
+  );
+
+  const items = products.length
+    ? products.map((product) => {
+        const fallback = itemLookup.get(product.slug) ?? itemLookup.get('collagen-coffee');
+
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          subtitle: fallback?.subtitle ?? 'Functional wellness',
+          description: product.description ?? fallback?.description ?? '',
+          category: fallback?.category ?? 'Wellness',
+          priceCents: product.priceCents ?? fallback?.priceCents ?? 0,
+          variantId: product.variantId ?? null,
+          variantName: product.variantName ?? null,
+          stock: product.stock ?? fallback?.stock ?? 0,
+          image: product.image ?? fallback?.image ?? '/images/products/collagen-coffee.jpg',
+          images: fallback?.images ?? [fallback?.image ?? '/images/products/collagen-coffee.jpg'],
+          compareAtCents: fallback?.compareAtCents,
+          benefits: fallback?.benefits ?? [],
+          tags: fallback?.tags ?? [],
+          active: product.active,
+          isBestSeller: fallback?.isBestSeller ?? false,
+          rating: fallback?.rating,
+        };
+      })
+    : developmentProducts.map((product) => ({
+        ...product,
+        variantId: null,
+        variantName: 'Standard',
+      }));
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-16">
