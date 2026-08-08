@@ -1,13 +1,24 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 
-dotenv.config({ path: '.env.local' });
+const databaseUrl = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+const useSsl = Boolean(
+  databaseUrl && !databaseUrl.includes('localhost') && !databaseUrl.includes('127.0.0.1'),
+);
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set');
+export const isDatabaseConfigured = Boolean(databaseUrl);
+
+export const db = databaseUrl
+  ? drizzle(postgres(databaseUrl, { ssl: useSsl ? 'require' : false, max: 1 }))
+  : null;
+
+export function getDb() {
+  if (!db) {
+    throw new Error(
+      'DATABASE_URL is not configured. Set it in Vercel Environment Variables or local .env.local.',
+    );
+  }
+
+  return db;
 }
-
-const client = postgres(process.env.DATABASE_URL);
-
-export const db = drizzle(client);

@@ -1,9 +1,16 @@
 import 'dotenv/config';
-import { db } from './index';
+import { db, getDb } from './index';
 import { categories, products, variants } from './schema';
 
 async function seed() {
-  const [category] = await db
+  if (!db) {
+    console.log('Database not configured. Skipping seed.');
+    process.exit(0);
+  }
+
+  const database = getDb();
+
+  const [category] = await database
     .insert(categories)
     .values({
       name: 'Wellness',
@@ -19,7 +26,7 @@ async function seed() {
     process.exit(0);
   }
 
-  const [product] = await db
+  const [product] = await database
     .insert(products)
     .values({
       name: 'Collagen Coffee',
@@ -29,7 +36,7 @@ async function seed() {
     })
     .returning();
 
-  await db.insert(variants).values({
+  await database.insert(variants).values({
     productId: product.id,
     sku: 'FH-COLLAGEN-01',
     name: '10 Sachets',
