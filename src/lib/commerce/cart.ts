@@ -1,54 +1,51 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-type CartItem = {
-  variantId: string;
+export type CartItem = {
   productId: string;
+  variantId: string;
   name: string;
+  variantName: string;
   priceCents: number;
   quantity: number;
+  image: string | null;
 };
 
-type CartState = {
-  items: CartItem[];
-  add: (item: CartItem) => void;
-  remove: (variantId: string) => void;
-  clear: () => void;
-};
+export function addCartItem(
+  cart: CartItem[],
+  item: CartItem,
+): CartItem[] {
+  const existing = cart.find(
+    (x) => x.variantId === item.variantId,
+  );
 
-export const useCart = create<CartState>()(
-  persist(
-    (set) => ({
-      items: [],
+  if (existing) {
+    return cart.map((x) =>
+      x.variantId === item.variantId
+        ? { ...x, quantity: x.quantity + item.quantity }
+        : x,
+    );
+  }
 
-      add: (item) =>
-        set((state) => {
-          const existing = state.items.find(
-            (x) => x.variantId === item.variantId,
-          );
+  return [...cart, item];
+}
 
-          if (existing) {
-            return {
-              items: state.items.map((x) =>
-                x.variantId === item.variantId
-                  ? { ...x, quantity: x.quantity + item.quantity }
-                  : x,
-              ),
-            };
-          }
+export function removeCartItem(
+  cart: CartItem[],
+  variantId: string,
+): CartItem[] {
+  return cart.filter((x) => x.variantId !== variantId);
+}
 
-          return { items: [...state.items, item] };
-        }),
+export function updateCartQuantity(
+  cart: CartItem[],
+  variantId: string,
+  quantity: number,
+): CartItem[] {
+  if (quantity <= 0) {
+    return removeCartItem(cart, variantId);
+  }
 
-      remove: (variantId) =>
-        set((state) => ({
-          items: state.items.filter((x) => x.variantId !== variantId),
-        })),
-
-      clear: () => set({ items: [] }),
-    }),
-    {
-      name: 'forestheals-cart',
-    },
-  ),
-);
+  return cart.map((x) =>
+    x.variantId === variantId
+      ? { ...x, quantity }
+      : x,
+  );
+}
