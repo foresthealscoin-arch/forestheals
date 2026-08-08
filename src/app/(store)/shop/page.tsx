@@ -11,7 +11,7 @@ export default async function ShopPage() {
     subtitle: 'Functional wellness',
     category: 'Wellness',
     priceCents: 99900,
-    image: '/images/products/collagen-coffee.webp',
+    image: '/images/products/collagen-coffee.jpg',
     benefits: [],
     tags: [],
     active: product.active,
