@@ -1,8 +1,15 @@
 export type HealthProfile = {
   goals: string[];
+  lifestyle: string[];
   preferences: string[];
-  dietaryPreferences: string[];
   allergies: string[];
-  quizVersion?: string;
-  updatedAt?: string;
+  dietaryPreferences: string[];
+};
+
+export const emptyHealthProfile: HealthProfile = {
+  goals: [],
+  lifestyle: [],
+  preferences: [],
+  allergies: [],
+  dietaryPreferences: [],
 };

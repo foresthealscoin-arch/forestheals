@@ -1,4 +1,4 @@
-import { ProductGrid } from '@/components/store/product-grid';
+import { ShopClient } from '@/components/store/shop-client';
 import { getProducts } from '@/lib/commerce/products';
 
 export default async function ShopPage() {
@@ -30,9 +30,7 @@ export default async function ShopPage() {
         Shop wellness.
       </h1>
 
-      <div className="mt-10">
-        <ProductGrid products={items} />
-      </div>
+      <ShopClient products={items} />
     </main>
   );
 }
