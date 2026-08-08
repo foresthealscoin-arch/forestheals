@@ -4,6 +4,8 @@ import {
   variants,
   productImages,
   productBenefits,
+  productIngredients,
+  ingredients,
 } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -54,8 +56,21 @@ export async function getProductBySlug(slug: string) {
     .from(productBenefits)
     .where(eq(productBenefits.productId, result[0].id));
 
+  const productIngredientRows = await db
+    .select({
+      name: ingredients.name,
+      amount: productIngredients.amount,
+    })
+    .from(productIngredients)
+    .innerJoin(
+      ingredients,
+      eq(productIngredients.ingredientId, ingredients.id),
+    )
+    .where(eq(productIngredients.productId, result[0].id));
+
   return {
     ...result[0],
     benefits: benefits.map((item) => item.benefit),
+    ingredients: productIngredientRows,
   };
 }
