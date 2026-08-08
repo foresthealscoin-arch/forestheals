@@ -12,20 +12,16 @@ fi
 
 echo ""
 echo "1. Checking environment..."
-
-if [ -f .env.local ] && grep -q '^DATABASE_URL=' .env.local; then
-  echo "DATABASE_URL: OK"
-else
-  echo "DATABASE_URL: MISSING"
-  exit 1
-fi
+echo "Database: Netlify managed"
+echo "External DATABASE_URL: not required"
 
 echo ""
 echo "2. Checking project..."
 
 for file in \
-  "src/db/schema.ts" \
-  "src/db/index.ts" \
+  "db/schema.ts" \
+  "db/index.ts" \
+  "netlify/database/migrations/20260808111950_create_store_schema/migration.sql" \
   "src/lib/commerce/products.ts" \
   "src/app/(store)/shop/page.tsx" \
   "src/app/(store)/shop/[slug]/page.tsx"

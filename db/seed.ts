@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { db } from './index';
 import { categories, products, variants } from './schema';
 

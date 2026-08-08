@@ -1,4 +1,4 @@
-import { db } from '@/db';
+import { db } from '@db';
 import {
   products,
   variants,
@@ -6,7 +6,7 @@ import {
   productBenefits,
   productIngredients,
   ingredients,
-} from '@/db/schema';
+} from '@db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function getProducts() {
@@ -64,10 +64,7 @@ export async function getProductBySlug(slug: string) {
       amount: productIngredients.amount,
     })
     .from(productIngredients)
-    .innerJoin(
-      ingredients,
-      eq(productIngredients.ingredientId, ingredients.id),
-    )
+    .innerJoin(ingredients, eq(productIngredients.ingredientId, ingredients.id))
     .where(eq(productIngredients.productId, result[0].id));
 
   return {

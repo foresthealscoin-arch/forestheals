@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { getSiteUrl } from '@/lib/site-url';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://forestheals.in';
+  const base = getSiteUrl();
 
   return [
     {
@@ -22,6 +23,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${base}/quiz`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${base}/privacy`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${base}/terms`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${base}/contact`,
       lastModified: new Date(),
     },
   ];
