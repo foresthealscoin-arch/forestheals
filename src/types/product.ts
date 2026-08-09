@@ -10,7 +10,9 @@ export type Product = {
   variantName?: string | null;
   stock?: number | null;
   image: string | null;
+  imageFallback?: string | null;
   images?: string[];
+  imageFallbacks?: string[];
   compareAtCents?: number;
   benefits: string[];
   tags: string[];

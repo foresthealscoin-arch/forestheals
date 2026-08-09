@@ -1,6 +1,7 @@
 import { ShopClient } from '@/components/store/shop-client';
 import { getProducts } from '@/lib/commerce/products';
 import { products as developmentProducts } from '@/data/products';
+import { getProductImageMap } from '@/lib/images/resolver';
 
 export default async function ShopPage() {
   const products = await getProducts();
@@ -40,6 +41,17 @@ export default async function ShopPage() {
         variantName: 'Standard',
       }));
 
+  const imageMap = await getProductImageMap(items.map((item) => item.slug));
+  const itemsWithImages = items.map((item) => {
+    const image = imageMap.get(item.slug);
+
+    return {
+      ...item,
+      image: image?.src ?? item.image,
+      imageFallback: image?.fallbackSrc ?? item.image,
+    };
+  });
+
   return (
     <main className="mx-auto max-w-7xl px-6 py-16">
       <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
@@ -50,7 +62,7 @@ export default async function ShopPage() {
         Shop wellness.
       </h1>
 
-      <ShopClient products={items} />
+      <ShopClient products={itemsWithImages} />
     </main>
   );
 }

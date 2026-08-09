@@ -4,6 +4,7 @@ import { ProductGrid } from '@/components/store/product-grid';
 import { Reveal } from '@/components/ui/motion';
 import { getDevelopmentProductBySlug, products as developmentProducts } from '@/data/products';
 import { getProductBySlug } from '@/lib/commerce/products';
+import { getProductImageMap, getProductImages } from '@/lib/images/resolver';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -58,19 +59,48 @@ export default async function ProductPage({ params }: Props) {
           item.tags.some((tag) => product.tags.includes(tag))),
     )
     .slice(0, 4);
+  const [resolvedImages, relatedImageMap] = await Promise.all([
+    getProductImages(product.slug),
+    getProductImageMap(relatedProducts.map((item) => item.slug)),
+  ]);
+  const primaryImage = resolvedImages.find((image) => image.slot === 'primary');
+  const productImages = resolvedImages.length
+    ? resolvedImages.map((image) => image.src)
+    : product.images ?? [product.image ?? '/images/products/collagen-coffee.jpg'];
+  const productImageFallbacks = resolvedImages.length
+    ? resolvedImages.map((image) => image.fallbackSrc ?? product.image ?? '')
+    : product.images ?? [product.image ?? '/images/products/collagen-coffee.jpg'];
+  const productWithImages = {
+    ...product,
+    image: primaryImage?.src ?? product.image,
+    imageFallback: primaryImage?.fallbackSrc ?? product.image,
+    images: productImages,
+    imageFallbacks: productImageFallbacks,
+  };
+  const relatedProductsWithImages = relatedProducts.map((relatedProduct) => {
+    const image = relatedImageMap.get(relatedProduct.slug);
+
+    return {
+      ...relatedProduct,
+      image: image?.src ?? relatedProduct.image,
+      imageFallback: image?.fallbackSrc ?? relatedProduct.image,
+    };
+  });
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12 md:py-16">
       <div className="grid gap-10 md:grid-cols-2 md:items-start">
         <Reveal>
           <ProductGallery
-            images={product.images ?? [product.image ?? '/images/products/collagen-coffee.jpg']}
-            name={product.name}
+            productSlug={productWithImages.slug}
+            images={productWithImages.images ?? []}
+            imageFallbacks={productWithImages.imageFallbacks}
+            name={productWithImages.name}
           />
         </Reveal>
 
         <Reveal delay={0.08}>
-          <ProductInfo product={product} />
+          <ProductInfo product={productWithImages} />
         </Reveal>
       </div>
 
@@ -117,7 +147,7 @@ export default async function ProductPage({ params }: Props) {
         </Reveal>
       )}
 
-      {relatedProducts.length > 0 && (
+      {relatedProductsWithImages.length > 0 && (
         <Reveal delay={0.14} className="mt-20">
           <section>
             <div className="mb-8 flex items-end justify-between gap-4">
@@ -131,7 +161,7 @@ export default async function ProductPage({ params }: Props) {
               </div>
             </div>
 
-            <ProductGrid products={relatedProducts} />
+            <ProductGrid products={relatedProductsWithImages} />
           </section>
         </Reveal>
       )}

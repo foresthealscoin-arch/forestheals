@@ -1,11 +1,14 @@
 import {
-  pgTable,
-  uuid,
-  text,
-  integer,
+  bigint,
   boolean,
+  index,
+  integer,
+  pgTable,
+  text,
   timestamp,
+  uuid,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const categories = pgTable('categories', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -44,6 +47,65 @@ export const productImages = pgTable('product_images', {
   alt: text('alt'),
   sortOrder: integer('sort_order').notNull().default(0),
 });
+
+export const siteImages = pgTable(
+  'site_images',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    filename: text('filename').notNull(),
+    slug: text('slug')
+      .notNull()
+      .generatedAlwaysAs(
+        sql`btrim(regexp_replace(lower(regexp_replace(filename, '\\.[^.]+$', '')), '[^a-z0-9]+', '-', 'g'), '-')`,
+      ),
+    category: text('category').notNull(),
+    storagePath: text('storage_path').notNull().unique(),
+    publicUrl: text('public_url').notNull(),
+    altText: text('alt_text').notNull(),
+    entityType: text('entity_type').notNull(),
+    entitySlug: text('entity_slug').notNull(),
+    variant: text('variant'),
+    slot: text('slot').notNull().default('primary'),
+    page: text('page').notNull(),
+    position: text('position').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    needsReview: boolean('needs_review').notNull().default(false),
+    width: integer('width'),
+    height: integer('height'),
+    mimeType: text('mime_type'),
+    fileSize: bigint('file_size', { mode: 'number' }),
+    contentHash: text('content_hash'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_site_images_entity_type').on(table.entityType),
+    index('idx_site_images_entity_slug').on(table.entitySlug),
+    index('idx_site_images_page').on(table.page),
+    index('idx_site_images_slot').on(table.slot),
+    index('idx_site_images_active_entity_slot_sort_order').on(
+      table.isActive,
+      table.entityType,
+      table.entitySlug,
+      table.slot,
+      table.sortOrder,
+    ),
+    index('idx_site_images_active_page_slot_sort_order').on(
+      table.isActive,
+      table.page,
+      table.slot,
+      table.sortOrder,
+    ),
+  ],
+);
+
+export type SiteImage = typeof siteImages.$inferSelect;
+export type NewSiteImage = typeof siteImages.$inferInsert;
 
 export const customers = pgTable('customers', {
   id: uuid('id').defaultRandom().primaryKey(),

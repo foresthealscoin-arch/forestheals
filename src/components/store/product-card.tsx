@@ -1,12 +1,12 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useState } from 'react';
 import type { Product } from '@/types/product';
 import { formatINR } from '@/lib/commerce/money';
 import { useCartStore } from '@/lib/commerce/cart-store';
+import { ProductImage } from '@/components/images/site-image';
 
 export function ProductCard({ product }: { product: Product }) {
   const reduceMotion = useReducedMotion();
@@ -54,19 +54,23 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
 
-          {product.image ? (
-            <motion.div whileHover={reduceMotion ? undefined : { scale: 1.04 }} transition={{ duration: 0.42 }}>
-              <Image
-                src={product.image}
-                alt={product.name}
-                width={945}
-                height={1181}
-                className="aspect-[4/5] w-full object-cover transition duration-500"
-              />
-            </motion.div>
-          ) : (
-            <div className="aspect-[4/5] bg-gray-100" />
-          )}
+          <motion.div
+            whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+            transition={{ duration: 0.42 }}
+            className="relative block aspect-[4/5]"
+          >
+            <ProductImage
+              productSlug={product.slug}
+              slot="primary"
+              src={product.image}
+              fallbackSrc={product.imageFallback}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+              className="object-cover transition duration-500"
+              placeholderClassName="block h-full w-full bg-gray-100"
+            />
+          </motion.div>
         </div>
 
         <div className="flex flex-1 flex-col pt-4">
