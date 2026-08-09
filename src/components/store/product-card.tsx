@@ -2,12 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useState } from 'react';
 import type { Product } from '@/types/product';
 import { formatINR } from '@/lib/commerce/money';
 import { useCartStore } from '@/lib/commerce/cart-store';
 
 export function ProductCard({ product }: { product: Product }) {
+  const reduceMotion = useReducedMotion();
   const addItem = useCartStore((state) => state.addItem);
+  const [added, setAdded] = useState(false);
   const isBestSeller = Boolean(product.isBestSeller || product.tags?.includes('bestseller'));
   const hasComparePrice =
     product.compareAtCents !== undefined &&
@@ -25,12 +29,25 @@ export function ProductCard({ product }: { product: Product }) {
       quantity: 1,
       image: product.image ?? null,
     });
+
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 900);
   }
 
   return (
-    <article className="group flex h-full flex-col rounded-[28px] border border-[var(--line)] bg-[var(--paper)] p-3 shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_46px_rgba(31,32,40,0.12)]">
-      <Link href={`/shop/${product.slug}`} className="block">
-        <div className="relative overflow-hidden rounded-[22px] bg-gray-100">
+    <motion.article
+      layout
+      whileHover={reduceMotion ? undefined : { y: -6 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="group flex h-full flex-col rounded-[28px] border border-[var(--border)] bg-[var(--paper)] p-3 shadow-[var(--shadow-soft)]"
+    >
+      <Link
+        href={`/shop/${product.slug}`}
+        className="block"
+        data-cursor="product"
+        aria-label={`View ${product.name}`}
+      >
+        <div className="relative overflow-hidden rounded-[22px] bg-[rgba(29,27,26,0.03)]">
           {isBestSeller && (
             <span className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-700">
               Best seller
@@ -38,13 +55,15 @@ export function ProductCard({ product }: { product: Product }) {
           )}
 
           {product.image ? (
-            <Image
-              src={product.image}
-              alt={product.name}
-              width={945}
-              height={1181}
-              className="aspect-[4/5] w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-            />
+            <motion.div whileHover={reduceMotion ? undefined : { scale: 1.04 }} transition={{ duration: 0.42 }}>
+              <Image
+                src={product.image}
+                alt={product.name}
+                width={945}
+                height={1181}
+                className="aspect-[4/5] w-full object-cover transition duration-500"
+              />
+            </motion.div>
           ) : (
             <div className="aspect-[4/5] bg-gray-100" />
           )}
@@ -79,18 +98,31 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           type="button"
           onClick={addToCart}
-          className="flex w-full items-center justify-center rounded-full bg-[var(--charcoal)] px-4 py-3 text-sm font-semibold text-[var(--cream)] transition hover:bg-[var(--blue-gray)] active:scale-[0.99]"
+          data-cursor="add"
+          className="relative flex w-full items-center justify-center overflow-hidden rounded-full bg-[var(--charcoal)] px-4 py-3 text-sm font-semibold text-[var(--cream)] shadow-[0_10px_22px_rgba(31,32,40,0.12)] transition hover:bg-[var(--blue-gray)] active:scale-[0.99]"
         >
-          Add to cart
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={added ? 'added' : 'default'}
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="inline-flex items-center justify-center"
+            >
+              {added ? 'Added' : 'Add to cart'}
+            </motion.span>
+          </AnimatePresence>
         </button>
 
         <Link
           href={`/shop/${product.slug}`}
-          className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-[var(--paper)] px-4 py-3 text-sm font-semibold text-[var(--near-black)] transition hover:bg-[var(--cream)]"
+          data-cursor="product"
+          className="inline-flex items-center justify-center rounded-full border border-[var(--border)] bg-[var(--paper)] px-4 py-3 text-sm font-semibold text-[var(--near-black)] transition hover:bg-[var(--cream)]"
         >
           View
         </Link>
       </div>
-    </article>
+    </motion.article>
   );
 }

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 export function Footer() {
@@ -5,7 +6,13 @@ export function Footer() {
     <footer className="mt-10 bg-[var(--near-black)] text-[var(--cream)]">
       <div className="mx-auto grid max-w-[1400px] gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] lg:px-8">
         <div>
-          <div className="logo text-2xl uppercase tracking-[0.14em]">FORESTHEALS</div>
+          <Image
+            src="/images/brand/word%20logo%20 footer.svg"
+            alt="Forestheals logo"
+            width={180}
+            height={48}
+            className="h-8 w-auto object-contain"
+          />
           <p className="mt-4 max-w-xs text-sm leading-6 text-[var(--cream)]/80">
             Functional essentials for a sharper daily rhythm.
           </p>

@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Check, Sparkles, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const questionGroups = [
   {
@@ -25,16 +25,12 @@ const questionGroups = [
 
 export function OnboardingFlow() {
   const reduceMotion = useReducedMotion();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return !window.localStorage.getItem('forestheals-onboarding-seen');
+  });
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
-
-  useEffect(() => {
-    const shown = window.localStorage.getItem('forestheals-onboarding-seen');
-    if (!shown) {
-      setIsOpen(true);
-    }
-  }, []);
 
   const currentQuestion = useMemo(() => questionGroups[step] ?? questionGroups[0], [step]);
   const progress = ((step + 1) / questionGroups.length) * 100;

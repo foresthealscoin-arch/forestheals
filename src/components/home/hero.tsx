@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Play } from 'lucide-react';
 import { MagneticButton } from '@/components/ui/motion';

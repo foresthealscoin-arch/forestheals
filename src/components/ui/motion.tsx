@@ -5,6 +5,7 @@ import {
   useMotionTemplate,
   useMotionValue,
   useReducedMotion,
+  type HTMLMotionProps,
   type MotionProps,
 } from 'framer-motion';
 import { type PropsWithChildren, useCallback } from 'react';
@@ -17,7 +18,29 @@ type RevealProps = PropsWithChildren<{
   amount?: number;
 }> & MotionProps;
 
-export function MotionReveal({
+export function FadeIn({
+  children,
+  className,
+  delay = 0,
+  ...props
+}: RevealProps) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className={className}
+      initial={reduceMotion ? false : { opacity: 0 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: motionTokens.durations.fast, delay, ease: motionTokens.easings.standard }}
+      {...props}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function Reveal({
   children,
   className,
   delay = 0,
@@ -45,26 +68,83 @@ export function MotionReveal({
   );
 }
 
+export function Stagger({
+  children,
+  className,
+  delay = 0,
+  ...props
+}: PropsWithChildren<{ className?: string; delay?: number } & MotionProps>) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className={className}
+      initial={reduceMotion ? false : { opacity: 0 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1 }}
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ delay, duration: motionTokens.durations.normal, staggerChildren: motionTokens.stagger }}
+      {...props}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function ScaleIn({
+  children,
+  className,
+  delay = 0,
+  ...props
+}: RevealProps) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className={className}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 12 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: motionTokens.durations.normal, delay, ease: motionTokens.easings.standard }}
+      {...props}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function PageTransition({ children }: PropsWithChildren) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.995 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35, ease: motionTokens.easings.standard }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 type MagneticButtonProps = PropsWithChildren<{
   className?: string;
   href?: string;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary';
-}>;
+} & HTMLMotionProps<'button'> & HTMLMotionProps<'a'>>;
 
 export function MagneticButton({
   children,
   className,
   href,
   onClick,
-  variant = 'primary',
+  ...props
 }: MagneticButtonProps) {
   const reduceMotion = useReducedMotion();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotateX = useMotionValue(0);
   const rotateY = useMotionValue(0);
-  const background = useMotionTemplate`radial-gradient(circle at 50% 50%, rgba(255,255,255,0.18), rgba(18,61,42,0.08) 40%, rgba(17,24,28,0.08) 100%)`;
+  const background = useMotionTemplate`radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2), rgba(17,24,28,0.06) 35%, rgba(17,24,28,0.02) 100%)`;
 
   const handleMove = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
@@ -78,8 +158,8 @@ export function MagneticButton({
 
       x.set(offsetX);
       y.set(offsetY);
-      rotateX.set(offsetY * -0.7);
-      rotateY.set(offsetX * 0.7);
+      rotateX.set(offsetY * -0.8);
+      rotateY.set(offsetX * 0.8);
     },
     [reduceMotion, x, y, rotateX, rotateY],
   );
@@ -96,7 +176,6 @@ export function MagneticButton({
     onMouseMove: handleMove,
     onMouseLeave: reset,
     onMouseEnter: reset,
-    onMouseDown: reset,
     whileHover: reduceMotion ? undefined : { scale: 1.02 },
     whileTap: reduceMotion ? undefined : { scale: 0.99 },
     style: {
@@ -107,6 +186,7 @@ export function MagneticButton({
       background,
       transformPerspective: 900,
     },
+    ...props,
   };
 
   if (href) {
