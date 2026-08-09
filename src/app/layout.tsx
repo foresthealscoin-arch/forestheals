@@ -3,6 +3,7 @@ import './globals.css';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { CustomCursor } from '@/components/ui/custom-cursor';
+import { PageTransition } from '@/components/ui/motion';
 
 export const metadata: Metadata = {
   title: {
@@ -19,11 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-[var(--cream)] text-[var(--near-black)] antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-[var(--background)] text-[var(--foreground)] antialiased selection:bg-[var(--accent-soft)] selection:text-[var(--foreground)]">
         <CustomCursor />
         <Navbar />
-        {children}
+        <PageTransition>{children}</PageTransition>
         <Footer />
       </body>
     </html>

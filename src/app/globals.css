@@ -13,6 +13,11 @@
   --muted: #525d63;
   --line: rgba(44, 41, 48, 0.16);
   --shadow-soft: 0 18px 48px rgba(31, 32, 40, 0.08);
+  --background: var(--paper);
+  --foreground: var(--near-black);
+  --accent: var(--blue-gray);
+  --accent-soft: rgba(42, 51, 58, 0.08);
+  --border: var(--line);
 }
 
 * {
@@ -61,7 +66,16 @@ p {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
-  transition: all 180ms ease;
+  transition: background-color var(--motion-duration-normal) ease,
+    border-color var(--motion-duration-normal) ease,
+    transform var(--motion-duration-fast) ease,
+    box-shadow var(--motion-duration-fast) ease,
+    opacity var(--motion-duration-fast) ease;
+}
+
+img {
+  display: block;
+  max-width: 100%;
 }
 
 .nav-item {
@@ -80,7 +94,7 @@ a {
   background: currentColor;
   transform: scaleX(0);
   transform-origin: left center;
-  transition: transform 180ms ease;
+  transition: transform 220ms ease;
 }
 
 .nav-item:hover::after,
@@ -93,8 +107,9 @@ a {
 .forest-button-secondary {
   position: relative;
   overflow: hidden;
+  border: 1px solid transparent;
   transform: translateY(0);
-  box-shadow: 0 10px 26px rgba(31, 32, 40, 0.08);
+  box-shadow: 0 12px 28px rgba(17, 24, 28, 0.08);
 }
 
 .forest-button::before,
@@ -102,15 +117,9 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%);
+  background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.3) 48%, transparent 80%);
   transform: translateX(-120%);
-  transition: transform 500ms ease;
-}
-
-.forest-button:hover,
-.forest-button-secondary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 18px 32px rgba(31, 32, 40, 0.12);
+  transition: transform 550ms ease;
 }
 
 .forest-button:hover::before,
@@ -118,14 +127,9 @@ a {
   transform: translateX(120%);
 }
 
-img {
-  display: block;
-  max-width: 100%;
-}
-
 ::selection {
-  background: rgba(44, 41, 48, 0.18);
-  color: var(--near-black);
+  background: rgba(62, 74, 61, 0.12);
+  color: var(--foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {
